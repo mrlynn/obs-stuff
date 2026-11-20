@@ -138,3 +138,7 @@ Install the free **Aitum Vertical** plugin. It adds a second 1080×1920 canvas t
 - **Captions:** the export script doesn't burn in subtitles (Homebrew's ffmpeg is built without `libass`). Use each platform's auto-captions, or install an ffmpeg build with libass.
 - **Rebuild after moving the folder:** `python3 obs/build_collection.py` (the collection stores absolute paths).
 - **Changing the webcam bubble position:** edit `CAM_RECT` / `CAM_RADIUS` in `obs/build_collection.py`, rebuild, and set `camRadius` in `config.js` to the same value.
+
+## License
+
+[MIT](LICENSE) © 2026 Michael Lynn
