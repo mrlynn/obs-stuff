@@ -40,6 +40,12 @@
     ["cam-frame.html#showName=1", 480, 480, "sq", "Webcam frame (480×480)"],
     ["safe-zones.html",  1920, 1080, "wide", "Crop guides — 16:9 canvas"],
     ["safe-zones.html",  1080, 1920, "tall", "Platform UI zones — 9:16 canvas"],
+    // Meetings (Meet / Zoom via OBS Virtual Camera)
+    ["meeting-nametag.html", 1920, 1080, "wide", "Meeting name tag + local time"],
+    ["meeting-agenda.html#agenda=2%20%C2%B7%20Roadmap%20review", 1920, 1080, "wide", "Meeting agenda bar"],
+    ["meeting-countdown.html", 1920, 1080, "wide", "Meeting — starting soon"],
+    ["meeting-brb.html", 1920, 1080, "wide", "Meeting — be right back"],
+    ["safe-zones.html#mode=meeting", 1920, 1080, "wide", "Meeting tile-safe guide"],
   ];
   const grid = document.getElementById("grid");
   for (const [src, w, h, shape, label] of items) {

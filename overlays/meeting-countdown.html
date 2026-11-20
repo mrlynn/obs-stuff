@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Meeting Countdown</title>
+<!-- "Starting soon" card. Browser Source: 1920×1080.
+     Counts down to the start time set in the Meeting Control dock. With nothing set, it
+     counts down `countdownMinutes` (config.js) from when the scene is shown. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { display: grid; place-items: center; }
+  .card { text-align: center; opacity: 0; transform: translateY(20px);
+          transition: opacity .6s var(--ease-out), transform .6s var(--ease-out); }
+  .card.show { opacity: 1; transform: none; }
+  .kicker { display: inline-flex; align-items: center; gap: 18px; font-size: 24px; color: var(--accent); }
+  .kicker::before { content: ""; width: 56px; height: 1px; background: currentColor; }
+  .title { margin-top: 26px; font-size: 96px; font-weight: 700; letter-spacing: -0.035em; line-height: 1; }
+  .clock { margin-top: 34px; font-family: var(--mono); font-size: 150px; line-height: 1; color: var(--accent);
+           font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .sub { margin-top: 30px; font-size: 26px; color: var(--muted); }
+  .done .clock { animation: blink 1.2s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="kicker label">Starting soon</div>
+    <div class="title" id="title"></div>
+    <div class="clock" id="clock">0:00</div>
+    <div class="sub"><span data-cfg="name"></span> · <span data-cfg="role"></span></div>
+  </div>
+<script>
+  const card = document.getElementById("card"), clock = document.getElementById("clock"), title = document.getElementById("title");
+  let target = null, fallbackStart = Date.now();
+  watchMeeting((s) => {
+    title.textContent = s.title || CFG.meetingTitle || "";
+    target = s.countdownTo && s.countdownTo > Date.now() - 3600e3 ? s.countdownTo : null;
+  });
+  function tick() {
+    const end = target || fallbackStart + (Number(CFG.countdownMinutes) || 3) * 60e3;
+    const left = end - Date.now();
+    clock.textContent = left > 0 ? fmtClock(left) : "Now";
+    card.classList.toggle("done", left <= 0);
+  }
+  setInterval(tick, 250); tick();
+  onObsShow((v) => { if (v) fallbackStart = Date.now(); card.classList.toggle("show", v); });
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Meeting Agenda Bar</title>
+<!-- Slim "now discussing" bar at the top. Browser Source: 1920×1080.
+     Text comes live from the Meeting Control dock (falls back to `agenda` in config.js).
+     Hides itself when the agenda is empty. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .bar {
+    position: absolute;
+    top: 56px;
+    left: 50%;
+    max-width: 1380px;          /* stays inside the centre 4:3 area */
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 14px 30px;
+    background: color-mix(in srgb, var(--ink) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 12%, transparent);
+    border-radius: var(--radius);
+    box-shadow: 0 16px 40px rgba(0,0,0,.35);
+    translate: -50% 0;
+    opacity: 0;
+    transform: translateY(-14px);
+    transition: opacity .45s var(--ease-out), transform .45s var(--ease-out);
+  }
+  .bar.show { opacity: 1; transform: none; }
+  .kicker { font-size: 18px; color: var(--accent); white-space: nowrap; display: flex; align-items: center; gap: 14px; }
+  .kicker::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+                    box-shadow: 0 0 0 0 var(--accent); animation: live 2s ease-out infinite; }
+  .text { font-size: 36px; font-weight: 600; letter-spacing: -0.015em;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @keyframes live { 70% { box-shadow: 0 0 0 10px transparent; } }
+</style>
+</head>
+<body>
+  <div class="bar" id="bar">
+    <span class="kicker label">Now</span>
+    <span class="text" id="text"></span>
+  </div>
+<script>
+  const bar = document.getElementById("bar"), text = document.getElementById("text");
+  let visible = false, agenda = CFG.agenda || "";
+  const render = () => {
+    text.textContent = agenda;
+    bar.classList.toggle("show", visible && !!agenda.trim());
+  };
+  // An #agenda=… in the URL pins the text (used by the gallery); otherwise follow the dock.
+  const pinned = new URLSearchParams(location.hash.slice(1)).has("agenda");
+  watchMeeting((s) => {
+    if (!pinned && typeof s.agenda === "string") agenda = s.agenda;
+    console.log("[obsKit] agenda: " + (agenda || "(empty)"));
+    render();
+  });
+  onObsShow((v) => { visible = v; render(); });
+</script>
+</body>
+</html>

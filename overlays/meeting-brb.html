@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Meeting BRB</title>
+<!-- "Be right back" card with a timer. Browser Source: 1920×1080.
+     Uses the time and note from the Meeting Control dock; with nothing set, counts down
+     `brbMinutes` (config.js) from when the scene is shown. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { display: grid; place-items: center; }
+  .card {
+    text-align: center; padding: 64px 110px 70px;
+    background: var(--ink);
+    border: 1px solid color-mix(in srgb, var(--paper) 14%, transparent);
+    border-radius: var(--radius);
+    box-shadow: 22px 22px 0 -1px var(--ink), 22px 22px 0 0 var(--accent), 0 40px 90px rgba(0,0,0,.5);
+    opacity: 0; transform: translateY(24px) scale(.97);
+    transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
+  }
+  .card.show { opacity: 1; transform: none; }
+  .kicker { display: inline-flex; align-items: center; gap: 18px; font-size: 22px; color: var(--accent); }
+  .kicker::before { content: ""; width: 48px; height: 1px; background: currentColor; }
+  .big { margin-top: 22px; font-size: 120px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+  .note { margin-top: 22px; font-size: 32px; font-style: italic; color: var(--accent); }
+  .back { margin-top: 34px; font-size: 26px; color: var(--muted); }
+  .back b { font-family: var(--mono); font-weight: 400; font-size: 34px; color: var(--paper); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="kicker label">Away for a moment</div>
+    <div class="big">Be right back</div>
+    <div class="note" id="note"></div>
+    <div class="back" id="back">Back in <b id="clock">5:00</b></div>
+  </div>
+<script>
+  const card = document.getElementById("card"), clock = document.getElementById("clock"),
+        note = document.getElementById("note"), back = document.getElementById("back");
+  let target = null, fallbackStart = Date.now();
+  watchMeeting((s) => {
+    note.textContent = (typeof s.brbNote === "string" ? s.brbNote : CFG.brbNote) || "";
+    note.hidden = !note.textContent;
+    target = s.brbUntil && s.brbUntil > Date.now() - 3600e3 ? s.brbUntil : null;
+  });
+  function tick() {
+    const end = target || fallbackStart + (Number(CFG.brbMinutes) || 5) * 60e3;
+    const left = end - Date.now();
+    if (left > 0) back.innerHTML = 'Back in <b>' + fmtClock(left) + '</b>';
+    else back.innerHTML = '<b>Any second now</b>';
+  }
+  setInterval(tick, 250); tick();
+  onObsShow((v) => { if (v) fallbackStart = Date.now(); card.classList.toggle("show", v); });
+</script>
+</body>
+</html>

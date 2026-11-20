@@ -42,4 +42,15 @@ window.OVERLAY_CONFIG = {
   // Webcam frame
   camRadius: 8,           // px corner radius (matches masks/cam-bubble-mask.png)
   camBorder: 3,           // px border thickness
+
+  // ── Meetings (Google Meet / Zoom via OBS Virtual Camera) ──
+  // These are defaults; change them live from the "Meeting Control" dock in OBS.
+  meetingTitle: "Weekly sync",
+  agenda: "",                 // e.g. "1 · Roadmap review"; empty hides the agenda bar
+  countdownMinutes: 3,        // "Starting soon" length when no time is set in the dock
+  brbMinutes: 5,              // "Be right back" length when no time is set in the dock
+  brbNote: "Grabbing a coffee",
+  showLocalTime: true,        // name tag shows your local time (helps other time zones)
+  timeZone: "",               // IANA name like "America/New_York"; empty = this Mac's zone
+  bookingUrl: "mlynn.org",    // shown on the meeting backgrounds
 };

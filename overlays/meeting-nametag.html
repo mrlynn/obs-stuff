@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Meeting Name Tag</title>
+<!-- Always-on name tag for meetings. Browser Source: 1920×1080.
+     Sized for Meet/Zoom, which shrink video to ~720p or a small tile: text is large and
+     kept inside the centre 4:3 area, because Meet crops grid tiles at the sides. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .tag {
+    position: absolute;
+    left: 270px;               /* inside the centre 4:3 area (240–1680px) */
+    bottom: 150px;             /* above Zoom/Meet's own name label at the tile's bottom edge */
+    display: flex;
+    align-items: stretch;
+    background: color-mix(in srgb, var(--ink) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 12%, transparent);
+    border-left: 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    box-shadow: 0 16px 40px rgba(0,0,0,.35);
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity .5s var(--ease-out), transform .5s var(--ease-out);
+  }
+  .tag.show { opacity: 1; transform: none; }
+  .bar { width: 6px; background: var(--accent); }
+  .body { padding: 16px 30px 18px 22px; }
+  .name { font-size: 46px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
+  .meta { margin-top: 10px; display: flex; gap: 22px; font-size: 20px; color: var(--accent); }
+  .meta .time { color: var(--muted); }
+  .meta .time::before { content: "◷ "; }
+</style>
+</head>
+<body>
+  <div class="tag" id="tag">
+    <div class="bar"></div>
+    <div class="body">
+      <div class="name" data-cfg="name"></div>
+      <div class="meta label">
+        <span data-cfg="role"></span>
+        <span class="time" id="time"></span>
+      </div>
+    </div>
+  </div>
+<script>
+  const timeEl = document.getElementById("time");
+  const showTime = String(CFG.showLocalTime) !== "false";
+  function tick() {
+    if (!showTime) { timeEl.hidden = true; return; }
+    const opts = { hour: "numeric", minute: "2-digit", timeZoneName: "short" };
+    if (CFG.timeZone) opts.timeZone = CFG.timeZone;
+    timeEl.textContent = new Intl.DateTimeFormat(undefined, opts).format(new Date());
+  }
+  tick(); setInterval(tick, 10000);
+  onObsShow((v) => document.getElementById("tag").classList.toggle("show", v));
+</script>
+</body>
+</html>

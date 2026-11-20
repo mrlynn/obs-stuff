@@ -61,4 +61,51 @@
     if (s > 0) return setTimeout(hide, s * 1000);
     return null;
   };
+
+  // ── Live meeting state ────────────────────────────────────
+  // meeting-control.html (an OBS dock) writes this; meeting overlays read it.
+  // Shape: { title, agenda, countdownTo (epoch ms), brbUntil (epoch ms), brbNote, updated }
+  // Falls back to config.js defaults when nothing has been set yet.
+  const KEY = "obsKit.meeting";
+  const chan = ("BroadcastChannel" in window) ? new BroadcastChannel("obsKit") : null;
+
+  window.readMeeting = function () {
+    let s = {};
+    try { s = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) {}
+    return s;
+  };
+  window.writeMeeting = function (patch) {
+    const next = Object.assign(readMeeting(), patch, { updated: Date.now() });
+    try { localStorage.setItem(KEY, JSON.stringify(next)); } catch (e) {}
+    if (chan) chan.postMessage(next);
+    return next;
+  };
+  // Calls fn(state) now and whenever the state changes. Three paths, because OBS's
+  // browser sources and docks are separate processes: BroadcastChannel, the storage
+  // event, and a 500 ms poll of shared localStorage as a backstop.
+  window.watchMeeting = function (fn) {
+    let last = "";
+    const emit = (s) => { const j = JSON.stringify(s); if (j !== last) { last = j; fn(s); } };
+    document.addEventListener("DOMContentLoaded", () => emit(readMeeting()));
+    if (chan) chan.onmessage = (e) => emit(e.data || {});
+    window.addEventListener("storage", (e) => { if (e.key === KEY) emit(readMeeting()); });
+    setInterval(() => emit(readMeeting()), 500);
+    // Heartbeats so the dock can show which overlays it can reach, and overlays can
+    // log (to the OBS log) once they can see the dock.
+    let dockLogged = false;
+    setInterval(() => {
+      try {
+        localStorage.setItem("obsKit.seen." + document.title, String(Date.now()));
+        const d = Number(localStorage.getItem("obsKit.dock") || 0);
+        if (!dockLogged && Date.now() - d < 5000) { dockLogged = true; console.log("[obsKit] " + document.title + " linked to Meeting Control dock"); }
+      } catch (e) {}
+    }, 2000);
+  };
+
+  // "4:05" style formatting for countdowns
+  window.fmtClock = function (ms) {
+    const t = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(t / 60), s = t % 60;
+    return m + ":" + String(s).padStart(2, "0");
+  };
 })();

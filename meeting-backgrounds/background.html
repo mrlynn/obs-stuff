@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Meeting Background</title>
+<!-- Source for the Meet / Zoom virtual backgrounds in this folder (1920×1080).
+     Variants via hash:  #variant=plain|name|booking  &theme=dark|light
+     Re-render all six with:  meeting-backgrounds/render.sh
+     Text stays in the top band and corners: Meet/Zoom cut you out of the middle of the frame. -->
+<script src="../overlays/config.js"></script>
+<script src="../overlays/shared.js"></script>
+<link rel="stylesheet" href="../overlays/shared.css">
+<style>
+  html, body { width: 1920px; height: 1080px; }
+  body { background: var(--bg); color: var(--fg); position: relative; }
+  :root { --bg: var(--ink); --fg: var(--paper); --gold: var(--accent); --sub: var(--muted); --line: rgba(232,230,220,.06); }
+  .light { --bg: #EFEEE8; --fg: #131512; --gold: #7A5F00; --sub: #5E5C53; --line: rgba(19,21,18,.07); }
+
+  .glow { position: absolute; width: 1300px; height: 1300px; border-radius: 50%; background: var(--accent);
+          filter: blur(220px); opacity: .14; right: -420px; top: -620px; }
+  .light .glow { opacity: .22; }
+  .glow2 { position: absolute; width: 900px; height: 900px; border-radius: 50%; background: var(--accent2);
+           filter: blur(200px); opacity: .07; left: -380px; bottom: -520px; }
+  .grid { position: absolute; inset: 0;
+          background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+          background-size: 96px 96px;
+          -webkit-mask: radial-gradient(ellipse at 50% 30%, #000 25%, transparent 80%); }
+  /* A soft vignette so the person cut-out sits on a calmer middle */
+  .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 70%, transparent 35%, color-mix(in srgb, var(--bg) 60%, transparent) 100%); }
+
+  .mark { position: absolute; left: 96px; top: 88px; display: flex; align-items: center; gap: 18px; }
+  .logo { width: 56px; height: 56px; border-radius: var(--radius); background: var(--accent); display: grid; place-items: center; }
+  .logo span { width: 30px; height: 30px; border-radius: 50%; background: #131512; color: var(--accent);
+               display: grid; place-items: center; font-weight: 700; font-size: 18px; }
+  .site { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .ident { position: absolute; left: 96px; top: 200px; max-width: 600px; }   /* stays clear of the person in the middle */
+  .ident .eyebrow { line-height: 1.7; align-items: flex-start; }
+  .ident .eyebrow::before { flex: none; margin-top: .85em; }
+  .eyebrow { display: flex; align-items: center; gap: 18px; font-size: 20px; color: var(--gold); }
+  .eyebrow::before { content: ""; width: 56px; height: 1px; background: currentColor; }
+  .name { margin-top: 22px; font-size: 84px; font-weight: 700; line-height: .95; letter-spacing: -0.035em; }
+  .tagline { margin-top: 18px; font-size: 30px; font-style: italic; color: var(--gold); }
+
+  .book { position: absolute; right: 96px; top: 96px; text-align: right; }
+  .book .k { font-size: 18px; color: var(--gold); }
+  .book .u { margin-top: 12px; font-size: 44px; font-weight: 600; letter-spacing: -0.02em; }
+  .book .u em { font-style: normal; color: var(--gold); }
+  .book .s { margin-top: 10px; font-size: 22px; color: var(--sub); }
+
+  .foot { position: absolute; right: 96px; bottom: 72px; font-size: 16px; color: var(--sub); }
+</style>
+</head>
+<body>
+  <div class="glow"></div><div class="glow2"></div><div class="grid"></div><div class="vig"></div>
+
+  <div class="mark"><div class="logo"><span id="initial">M</span></div><div class="site" data-cfg="website"></div></div>
+
+  <div class="ident" id="ident" hidden>
+    <div class="eyebrow label" data-cfg="role"></div>
+    <div class="name" data-cfg="name"></div>
+    <div class="tagline">I help people build with data &amp; AI.</div>
+  </div>
+
+  <div class="book" id="book" hidden>
+    <div class="k label">Book a call</div>
+    <div class="u" id="bookUrl"></div>
+    <div class="s">Data · AI · Developer experience</div>
+  </div>
+
+  <div class="foot label" data-cfg="handle"></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (CFG.theme === "light") document.documentElement.classList.add("light");
+    document.getElementById("initial").textContent = String(CFG.name || "M").trim()[0].toUpperCase();
+    // Wrap the role only between its "·"-separated parts
+    const eb = document.querySelector(".ident .eyebrow");
+    eb.innerHTML = "<span>" + String(CFG.role || "").split(/\s*·\s*/).filter(Boolean)
+      .map((p) => `<span style="white-space:nowrap">${p.replace(/</g, "&lt;")}</span>`).join(" · ") + "</span>";
+    const v = CFG.variant || "plain";
+    if (v === "name") document.getElementById("ident").hidden = false;
+    if (v === "booking") {
+      document.getElementById("book").hidden = false;
+      document.querySelector(".site").hidden = true;   // URL is already in the booking corner
+      const u = String(CFG.bookingUrl || CFG.website || "");
+      const [host, ...rest] = u.split("/");
+      document.getElementById("bookUrl").innerHTML = host.replace(/</g, "&lt;") + (rest.length ? "<em>/" + rest.join("/") + "</em>" : "");
+    }
+  });
+</script>
+</body>
+</html>

@@ -36,7 +36,16 @@
   const g = document.getElementById("g");
   const W = innerWidth, H = innerHeight;
   const add = (html) => g.insertAdjacentHTML("beforeend", html);
-  if (W >= H) {
+  if (CFG.mode === "meeting" && W >= H) {
+    // Meetings: Zoom shows the full 16:9 frame; Meet's grid crops tiles toward 4:3 or square.
+    const box = (rw, rh, cls, label) => {
+      const h = H, w = Math.round(H * rw / rh);
+      add(`<div class="box ${cls}" style="left:${(W - w) / 2}px;top:0;width:${w}px;height:${h}px"><span class="lbl">${label}</span></div>`);
+    };
+    box(4, 3, "v916", "4:3 · Meet grid tile — keep text inside");
+    box(1, 1, "v11", "1:1 · small tiles / mobile");
+    add(`<div class="ui" style="left:0;bottom:0;width:100%;height:${Math.round(H * 0.11)}px"><span>Zoom / Meet name label & controls area</span></div>`);
+  } else if (W >= H) {
     // Landscape canvas: show center crops (match social-export.sh "crop" mode)
     const crop = (rw, rh, cls, label) => {
       const h = H, w = Math.round(H * rw / rh);

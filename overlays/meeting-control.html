@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting Control</title>
+<!-- Control panel for the meeting overlays. Add it to OBS as a dock:
+     Docks → Custom Browser Docks… → Name "Meeting Control", URL = file:///…/overlays/meeting-control.html
+     (obs/build_meetings.py --install adds it for you). Changes show in the overlays within ½ s. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  html, body { overflow: auto; }
+  body { background: var(--ink); padding: 14px 14px 24px; font-size: 14px; }
+  h1 { font-size: 13px; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  h1::before { content: ""; width: 24px; height: 1px; background: currentColor; }
+  section { padding: 12px 0; border-top: 1px solid color-mix(in srgb, var(--paper) 10%, transparent); }
+  h2 { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  input, textarea {
+    width: 100%; font: inherit; color: var(--paper); background: color-mix(in srgb, var(--paper) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 16%, transparent); border-radius: var(--radius); padding: 7px 9px;
+  }
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus, textarea:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  .row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; padding: 6px 11px; border-radius: var(--radius);
+    color: var(--paper); background: color-mix(in srgb, var(--paper) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 16%, transparent);
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { color: var(--ink); background: var(--accent); border-color: var(--accent); }
+  .presets { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .presets button { text-align: left; font-weight: 400; }
+  .presets button.on { border-color: var(--accent); color: var(--accent); }
+  .now { margin-top: 6px; font-size: 12px; color: var(--muted); min-height: 1.2em; }
+  .now b { color: var(--accent); font-weight: 400; font-family: var(--mono); }
+  .status { font-size: 11px; color: var(--muted); }
+  .status .ok { color: #7ddc8a; } .status .bad { color: #ff8a7a; }
+</style>
+</head>
+<body>
+  <h1 class="label">Meeting control</h1>
+
+  <section>
+    <h2 class="label">Meeting title</h2>
+    <input id="title" placeholder="Weekly sync">
+  </section>
+
+  <section>
+    <h2 class="label">Agenda bar</h2>
+    <input id="agenda" placeholder="Now discussing…">
+    <div class="row">
+      <button class="primary" id="agendaSet">Show</button>
+      <button id="agendaClear">Clear</button>
+      <button id="agendaNext">Next item →</button>
+    </div>
+    <h2 class="label" style="margin-top:12px">Items (one per line, click to show)</h2>
+    <textarea id="items" placeholder="Intros&#10;Roadmap review&#10;Open questions"></textarea>
+    <div class="presets" id="presets"></div>
+  </section>
+
+  <section>
+    <h2 class="label">Starting soon</h2>
+    <div class="row">
+      <button data-start="1">1 min</button><button data-start="3">3 min</button>
+      <button data-start="5">5 min</button><button data-start="10">10 min</button>
+    </div>
+    <div class="row"><input id="startAt" type="time" style="width:auto"><button id="startAtSet">Start at</button></div>
+    <div class="now" id="startNow"></div>
+  </section>
+
+  <section>
+    <h2 class="label">Be right back</h2>
+    <input id="brbNote" placeholder="Grabbing a coffee">
+    <div class="row">
+      <button data-brb="2">2 min</button><button data-brb="5">5 min</button>
+      <button data-brb="10">10 min</button><button data-brb="15">15 min</button>
+    </div>
+    <div class="now" id="brbNow"></div>
+  </section>
+
+  <section>
+    <div class="status" id="status">Looking for overlays…</div>
+  </section>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const st0 = readMeeting();
+  $("title").value = st0.title ?? CFG.meetingTitle ?? "";
+  $("agenda").value = st0.agenda ?? CFG.agenda ?? "";
+  $("brbNote").value = st0.brbNote ?? CFG.brbNote ?? "";
+  try { $("items").value = localStorage.getItem("obsKit.items") || ""; } catch (e) {}
+
+  // Text fields apply as you type (title, BRB note) or on Show (agenda)
+  $("title").addEventListener("input", (e) => writeMeeting({ title: e.target.value }));
+  $("brbNote").addEventListener("input", (e) => writeMeeting({ brbNote: e.target.value }));
+  $("agendaSet").onclick = () => writeMeeting({ agenda: $("agenda").value });
+  $("agenda").addEventListener("keydown", (e) => { if (e.key === "Enter") $("agendaSet").click(); });
+  $("agendaClear").onclick = () => { $("agenda").value = ""; writeMeeting({ agenda: "" }); };
+
+  // Agenda items
+  const items = () => $("items").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  function renderPresets() {
+    const cur = readMeeting().agenda || "";
+    $("presets").innerHTML = "";
+    items().forEach((it, i) => {
+      const b = document.createElement("button");
+      b.textContent = (i + 1) + " · " + it;
+      b.classList.toggle("on", cur === b.textContent);
+      b.onclick = () => { $("agenda").value = b.textContent; writeMeeting({ agenda: b.textContent }); renderPresets(); };
+      $("presets").appendChild(b);
+    });
+  }
+  $("items").addEventListener("input", () => { try { localStorage.setItem("obsKit.items", $("items").value); } catch (e) {} renderPresets(); });
+  $("agendaNext").onclick = () => {
+    const list = items(); if (!list.length) return;
+    const labels = list.map((it, i) => (i + 1) + " · " + it);
+    const i = labels.indexOf(readMeeting().agenda || "");
+    const next = labels[(i + 1) % labels.length];
+    $("agenda").value = next; writeMeeting({ agenda: next }); renderPresets();
+  };
+  renderPresets();
+
+  // Timers
+  document.querySelectorAll("[data-start]").forEach((b) =>
+    b.onclick = () => writeMeeting({ countdownTo: Date.now() + b.dataset.start * 60e3 }));
+  $("startAtSet").onclick = () => {
+    const [h, m] = ($("startAt").value || "").split(":").map(Number);
+    if (isNaN(h)) return;
+    const t = new Date(); t.setHours(h, m || 0, 0, 0);
+    if (t < Date.now() - 60e3) t.setDate(t.getDate() + 1);
+    writeMeeting({ countdownTo: t.getTime() });
+  };
+  document.querySelectorAll("[data-brb]").forEach((b) =>
+    b.onclick = () => writeMeeting({ brbUntil: Date.now() + b.dataset.brb * 60e3, brbNote: $("brbNote").value }));
+
+  // Live readouts + heartbeat + which overlays are reachable
+  setInterval(() => {
+    const s = readMeeting(), now = Date.now();
+    $("startNow").innerHTML = s.countdownTo > now ? "Starts in <b>" + fmtClock(s.countdownTo - now) + "</b>" : "";
+    $("brbNow").innerHTML = s.brbUntil > now ? "Back in <b>" + fmtClock(s.brbUntil - now) + "</b>" : "";
+    try {
+      localStorage.setItem("obsKit.dock", String(now));
+      const seen = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k.startsWith("obsKit.seen.") && now - Number(localStorage.getItem(k)) < 6000) seen.push(k.slice(12));
+      }
+      $("status").innerHTML = seen.length
+        ? '<span class="ok">● Connected</span> to ' + seen.sort().join(", ")
+        : '<span class="bad">● No overlays seen</span> — switch to a meeting scene';
+    } catch (e) { $("status").textContent = "Storage unavailable: " + e.message; }
+  }, 1000);
+</script>
+</body>
+</html>
