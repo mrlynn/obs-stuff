@@ -8,7 +8,7 @@
 window.OVERLAY_CONFIG = {
   // Identity
   name: "Michael Lynn",
-  role: "Engineer at SpaceXAI · Developer Advocate",
+  role: "Engineer at SpaceXAI · Developer Advocate · Advisor",
   handle: "@mlynn",
   website: "mlynn.org",
 
