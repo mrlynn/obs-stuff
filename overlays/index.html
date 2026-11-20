@@ -29,8 +29,9 @@
   <div class="grid" id="grid"></div>
 <script>
   const items = [
-    ["lower-third.html", 1920, 1080, "wide", "Name / title lower third"],
-    ["lower-third.html#lowerThirdAlign=center", 1920, 1080, "wide", "Lower third — centered (crop-safe)"],
+    // Lower thirds stay up in the gallery (they auto-hide after lowerThirdHoldSeconds in OBS)
+    ["lower-third.html#lowerThirdHoldSeconds=0", 1920, 1080, "wide", "Name / title lower third"],
+    ["lower-third.html#lowerThirdHoldSeconds=0&lowerThirdAlign=center", 1920, 1080, "wide", "Lower third — centered (crop-safe)"],
     ["hook-title.html",  1920, 1080, "wide", "Hook headline (16:9)"],
     ["hook-title.html",  1080, 1920, "tall", "Hook headline (9:16)"],
     ["cta-outro.html",   1920, 1080, "wide", "Follow CTA outro"],
