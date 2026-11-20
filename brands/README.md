@@ -17,6 +17,8 @@ is gitignored. The public repo works fine without it: the brand switcher just is
 ## Switch brands
 
 - **OBS:** click a brand in the **Meeting Control** dock. Every overlay reloads in that brand.
+- **Default:** set `window.OBSKIT_DEFAULT_BRAND = "<id>"` in `brands/private/brands.js`. It applies
+  until a brand button in the dock is clicked. A click, including **Personal**, always wins.
 - **One source only:** add `#brand=<id>` to a page URL, e.g. `meeting-brb.html#brand=acme`.
 - **Meet / Zoom backgrounds:** `meeting-backgrounds/render.sh` also renders every private
   brand into `brands/private/backgrounds/`.
