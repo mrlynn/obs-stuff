@@ -20,6 +20,7 @@ overlays/            Browser Source overlays (transparent HTML, 1920×1080 unles
   meeting-control.html  OBS dock that changes the meeting overlays live
   masks/             PNG masks for rounded or circular webcams
 meeting-backgrounds/ ready-to-upload Meet / Zoom backgrounds (dark & light) + render.sh
+brands/              optional employer/client brand profiles (brands/private/ is gitignored)
 obs/
   build_collection.py   builds the "Social Media Kit" scene collection
   build_meetings.py     builds the "Meetings" scene collection and adds the Meeting Control dock
@@ -196,6 +197,16 @@ Text sits in the top band and corners, because the app cuts you out of the middl
 - **No audio.** The Virtual Camera sends video only. Meet and Zoom use your mic directly, so OBS's mic filters don't apply in calls.
 - **Starting the Virtual Camera automatically:** in **Tools → Scripts → startup-scene.lua**, tick **Start Virtual Camera on launch** while the Meetings collection is open.
 - **Switching back** to recording: **Scene Collection → Social Media Kit**.
+
+## 7. Work and client brands
+
+The same overlays, meeting scenes and backgrounds can switch to another brand, such as your employer's, through a **brand profile**. A profile sets colors, fonts, corner radius, the role line and the official logo files.
+
+- Profiles and logos live in `brands/private/`, which is **gitignored**, so company assets never reach the public repo. Start from `brands/example.js`. See [brands/README.md](brands/README.md).
+- **Switching in OBS:** use the brand buttons at the top of the **Meeting Control** dock. Every overlay reloads in the chosen brand.
+- **Previewing:** the brand buttons at the top of `overlays/index.html`.
+- **Meet / Zoom backgrounds:** `meeting-backgrounds/render.sh` also renders each private brand into `brands/private/backgrounds/`.
+- **Logos:** use the company's own artwork. If a logo file is missing, overlays show the brand name as plain text instead.
 
 ## Notes
 

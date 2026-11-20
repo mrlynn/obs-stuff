@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Overlay Gallery</title>
 <!-- Open this in a browser to preview every overlay. Click a tile to replay its animation. -->
+<script src="../brands/private/brands.js"></script>
 <style>
   body { margin: 0; padding: 32px; background: #111; color: #eee; font: 15px/1.4 -apple-system, sans-serif; }
   h1 { margin: 0 0 4px; font-size: 22px; }
@@ -21,11 +22,16 @@
   .stage.sq   { aspect-ratio: 1; max-width: 300px; margin: 0 auto; }
   .stage iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
   .stage::after { content: ""; position: absolute; inset: 0; cursor: pointer; }
+  .brands { display: flex; gap: 8px; margin: -8px 0 24px; flex-wrap: wrap; }
+  .brands button { font: inherit; padding: 6px 14px; border-radius: 4px; cursor: pointer;
+                   background: #1c1c1c; color: #ddd; border: 1px solid #333; }
+  .brands button.on { background: #eee; color: #111; border-color: #eee; }
 </style>
 </head>
 <body>
   <h1>OBS Overlay Gallery</h1>
   <p>Edit <code>config.js</code> to rebrand everything, then reload. Click any tile to replay.</p>
+  <div class="brands" id="brands" hidden></div>
   <div class="grid" id="grid"></div>
 <script>
   const items = [
@@ -48,7 +54,25 @@
     ["safe-zones.html#mode=meeting", 1920, 1080, "wide", "Meeting tile-safe guide"],
   ];
   const grid = document.getElementById("grid");
-  for (const [src, w, h, shape, label] of items) {
+  // Brand preview buttons (only when brands/private/brands.js exists); ?brand=<id> also works
+  let brand = new URLSearchParams(location.search).get("brand") || "";
+  const brandList = Object.entries(window.OBSKIT_BRANDS || {}).filter(([, b]) => !b.hiddenInPicker);
+  if (brandList.length) {
+    const bar = document.getElementById("brands"); bar.hidden = false;
+    [["", { label: "Personal" }], ...brandList].forEach(([id, b]) => {
+      const btn = document.createElement("button");
+      btn.textContent = b.label || id; btn.classList.toggle("on", id === brand);
+      btn.onclick = () => { location.search = id ? "?brand=" + id : ""; };
+      bar.appendChild(btn);
+    });
+  }
+  const withBrand = (src) => {
+    const [file, hash] = src.split("#");
+    const parts = [hash, "brand=" + brand].filter(Boolean);
+    return file + "#" + parts.join("&");
+  };
+  for (const [src0, w, h, shape, label] of items) {
+    const src = withBrand(src0);
     const fig = document.createElement("figure");
     fig.innerHTML = `<div class="stage ${shape}"><iframe src="${src}" width="${w}" height="${h}"></iframe></div>
       <figcaption><span>${label}</span><code>${src.split("#")[0]} · ${w}×${h}</code></figcaption>`;

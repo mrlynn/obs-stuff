@@ -6,9 +6,45 @@
   const params = new URLSearchParams(
     (location.hash.slice(1) || "") + "&" + (location.search.slice(1) || "")
   );
-  const cfg = Object.assign({}, base);
-  for (const [k, v] of params) if (k) cfg[k] = v;
+  // Brand profile (brands/private/brands.js, optional): #brand=<id> wins, else the
+  // brand chosen in the Meeting Control dock, else none (personal config.js).
+  const brands = window.OBSKIT_BRANDS || {};
+  let storedBrand = "";
+  try { storedBrand = localStorage.getItem("obsKit.brand") || ""; } catch (e) {}
+  const pinnedBrand = params.get("brand");
+  const brandId = pinnedBrand !== null ? pinnedBrand : storedBrand;
+  const brand = brands[brandId] || null;
+
+  const cfg = Object.assign({}, base, brand || {});
+  for (const [k, v] of params) if (k && k !== "brand") cfg[k] = v;
+  cfg.brandId = brand ? brandId : "";
   window.CFG = cfg;
+
+  // When the dock switches brand, reload so every color/font/logo is re-applied.
+  if (pinnedBrand === null) {
+    setInterval(() => {
+      let now = "";
+      try { now = localStorage.getItem("obsKit.brand") || ""; } catch (e) {}
+      if ((brands[now] ? now : "") !== cfg.brandId) location.reload();
+    }, 1000);
+  }
+
+  // Fill an element with the brand logo <img>, or brandName text if there's no logo file.
+  // opts.invert: true on light backgrounds (brand logos are white).
+  window.brandMark = function (el, opts) {
+    opts = opts || {};
+    const src = opts.src || cfg.logo;
+    const fallback = () => { el.textContent = opts.text !== undefined ? opts.text : (cfg.brandName || ""); el.classList.add("brand-text"); };
+    if (!src) { fallback(); return; }
+    const img = new Image();
+    img.alt = cfg.brandName || "";
+    img.className = "brand-logo";
+    if (opts.invert) img.style.filter = "invert(1)";
+    img.onerror = () => { img.remove(); fallback(); };
+    el.textContent = "";
+    el.appendChild(img);
+    img.src = src;
+  };
 
   // Theme → CSS variables
   const root = document.documentElement.style;
@@ -25,8 +61,9 @@
 
   // Load the font (silently ignored when offline)
   const families = [];
-  if (cfg.font) families.push(`family=${encodeURIComponent(cfg.font)}:ital,wght@0,400..700;1,400..700`);
-  if (cfg.monoFont) families.push(`family=${encodeURIComponent(cfg.monoFont)}`);
+  const fontSpec = cfg.fontSpec || "ital,wght@0,400..700;1,400..700";
+  if (cfg.font) families.push(`family=${encodeURIComponent(cfg.font)}:${fontSpec}`);
+  if (cfg.monoFont && cfg.monoFont !== cfg.font) families.push(`family=${encodeURIComponent(cfg.monoFont)}`);
   if (families.length) {
     const l = document.createElement("link");
     l.rel = "stylesheet";

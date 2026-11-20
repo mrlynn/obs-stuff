@@ -2,6 +2,9 @@
 obs/Social-Media-Kit.json
 obs/Meetings.json
 
+# Work / company brand profiles and logos — never published
+brands/private/
+
 # Video exports and thumbnails from scripts/
 exports/
 

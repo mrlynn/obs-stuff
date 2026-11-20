@@ -7,6 +7,7 @@
      Uses the time and note from the Meeting Control dock; with nothing set, counts down
      `brbMinutes` (config.js) from when the scene is shown. -->
 <script src="config.js"></script>
+<script src="../brands/private/brands.js"></script>
 <script src="shared.js"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -21,6 +22,7 @@
     transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
   }
   .card.show { opacity: 1; transform: none; }
+  .logo { height: 48px; display: flex; justify-content: center; margin-bottom: 34px; font-size: 32px; }
   .kicker { display: inline-flex; align-items: center; gap: 18px; font-size: 22px; color: var(--accent); }
   .kicker::before { content: ""; width: 48px; height: 1px; background: currentColor; }
   .big { margin-top: 22px; font-size: 120px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
@@ -31,6 +33,7 @@
 </head>
 <body>
   <div class="card" id="card">
+    <div class="logo" id="logo" hidden></div>
     <div class="kicker label">Away for a moment</div>
     <div class="big">Be right back</div>
     <div class="note" id="note"></div>
@@ -52,6 +55,7 @@
     else back.innerHTML = '<b>Any second now</b>';
   }
   setInterval(tick, 250); tick();
+  if (CFG.brandId) { const l = document.getElementById("logo"); l.hidden = false; brandMark(l); }
   onObsShow((v) => { if (v) fallbackStart = Date.now(); card.classList.toggle("show", v); });
 </script>
 </body>

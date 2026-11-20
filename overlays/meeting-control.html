@@ -8,6 +8,7 @@
      Docks → Custom Browser Docks… → Name "Meeting Control", URL = file:///…/overlays/meeting-control.html
      (obs/build_meetings.py --install adds it for you). Changes show in the overlays within ½ s. -->
 <script src="config.js"></script>
+<script src="../brands/private/brands.js"></script>
 <script src="shared.js"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -38,10 +39,16 @@
   .now b { color: var(--accent); font-weight: 400; font-family: var(--mono); }
   .status { font-size: 11px; color: var(--muted); }
   .status .ok { color: #7ddc8a; } .status .bad { color: #ff8a7a; }
+  #brandRow button.on { color: var(--ink); background: var(--accent); border-color: var(--accent); }
 </style>
 </head>
 <body>
   <h1 class="label">Meeting control</h1>
+
+  <section id="brandSec" hidden>
+    <h2 class="label">Brand</h2>
+    <div class="row" id="brandRow"></div>
+  </section>
 
   <section>
     <h2 class="label">Meeting title</h2>
@@ -87,6 +94,19 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
+
+  // Brand picker (only when brands/private/brands.js exists). Every overlay reloads in the new brand.
+  const brandList = Object.entries(window.OBSKIT_BRANDS || {}).filter(([, b]) => !b.hiddenInPicker);
+  if (brandList.length) {
+    $("brandSec").hidden = false;
+    [["", { label: "Personal" }], ...brandList].forEach(([id, b]) => {
+      const btn = document.createElement("button");
+      btn.textContent = b.label || id;
+      btn.classList.toggle("on", id === CFG.brandId);
+      btn.onclick = () => { try { localStorage.setItem("obsKit.brand", id); } catch (e) {} };
+      $("brandRow").appendChild(btn);
+    });
+  }
   const st0 = readMeeting();
   $("title").value = st0.title ?? CFG.meetingTitle ?? "";
   $("agenda").value = st0.agenda ?? CFG.agenda ?? "";

@@ -11,6 +11,7 @@ window.OVERLAY_CONFIG = {
   role: "Engineer at SpaceXAI · Developer Advocate · Advisor",
   handle: "@mlynn",
   website: "mlynn.org",
+  tagline: "I help people build with data & AI.",   // shown on the "name" meeting backgrounds
 
   // Hook card (first 2–3 seconds of a short-form video)
   hook: "Stop doing this in OBS",

@@ -7,6 +7,7 @@
      Counts down to the start time set in the Meeting Control dock. With nothing set, it
      counts down `countdownMinutes` (config.js) from when the scene is shown. -->
 <script src="config.js"></script>
+<script src="../brands/private/brands.js"></script>
 <script src="shared.js"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
@@ -20,17 +21,21 @@
   .clock { margin-top: 34px; font-family: var(--mono); font-size: 150px; line-height: 1; color: var(--accent);
            font-variant-numeric: tabular-nums; letter-spacing: .02em; }
   .sub { margin-top: 30px; font-size: 26px; color: var(--muted); }
+  .logo { height: 64px; display: flex; justify-content: center; margin-bottom: 40px; font-size: 40px; }
+  .signoff { position: fixed; left: 50%; bottom: 64px; translate: -50% 0; height: 30px; opacity: .8; }
   .done .clock { animation: blink 1.2s ease-in-out infinite; }
   @keyframes blink { 50% { opacity: .35; } }
 </style>
 </head>
 <body>
   <div class="card" id="card">
+    <div class="logo" id="logo" hidden></div>
     <div class="kicker label">Starting soon</div>
     <div class="title" id="title"></div>
     <div class="clock" id="clock">0:00</div>
     <div class="sub"><span data-cfg="name"></span> · <span data-cfg="role"></span></div>
   </div>
+  <div class="signoff" id="signoff" hidden></div>
 <script>
   const card = document.getElementById("card"), clock = document.getElementById("clock"), title = document.getElementById("title");
   let target = null, fallbackStart = Date.now();
@@ -45,6 +50,8 @@
     card.classList.toggle("done", left <= 0);
   }
   setInterval(tick, 250); tick();
+  if (CFG.brandId) { const l = document.getElementById("logo"); l.hidden = false; brandMark(l); }
+  if (CFG.signoff) { const s = document.getElementById("signoff"); s.hidden = false; brandMark(s, { src: CFG.signoff, text: "" }); }
   onObsShow((v) => { if (v) fallbackStart = Date.now(); card.classList.toggle("show", v); });
 </script>
 </body>
