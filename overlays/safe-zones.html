@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Safe Zones</title>
+<!-- FRAMING GUIDE — keep this source HIDDEN while recording (it would be burned in).
+     On a 16:9 canvas it shows the 9:16 and 1:1 crops that scripts/social-export.sh makes.
+     On a 9:16 canvas (1080×1920) it shows where TikTok / Reels / Shorts UI covers the video. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .box { position: absolute; border: 3px dashed; border-radius: 4px; }
+  .lbl {
+    position: absolute; top: 8px; left: 8px;
+    font: 700 18px/1 var(--font); padding: 6px 10px; border-radius: 6px; color: #000;
+  }
+  .v916 { border-color: #22d3ee; } .v916 .lbl { background: #22d3ee; }
+  .v11  { border-color: #facc15; } .v11 .lbl  { background: #facc15; }
+  .v45  { border-color: #f472b6; } .v45 .lbl  { background: #f472b6; }
+  .thirds { position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(90deg, transparent calc(33.33% - 1px), rgba(255,255,255,.25) 0 calc(33.33% + 1px), transparent 0 calc(66.66% - 1px), rgba(255,255,255,.25) 0 calc(66.66% + 1px), transparent 0),
+      linear-gradient(180deg, transparent calc(33.33% - 1px), rgba(255,255,255,.25) 0 calc(33.33% + 1px), transparent 0 calc(66.66% - 1px), rgba(255,255,255,.25) 0 calc(66.66% + 1px), transparent 0);
+  }
+  .ui { position: absolute; background: repeating-linear-gradient(45deg, rgba(255,60,60,.32) 0 14px, rgba(255,60,60,.12) 14px 28px); }
+  .ui span { position: absolute; font: 700 22px var(--font); color: #fff; text-shadow: 0 2px 6px #000; padding: 10px 14px; }
+  .safe { position: absolute; border: 3px solid #4ade80; }
+  .safe span { position: absolute; top: 8px; left: 8px; font: 700 20px var(--font); background: #4ade80; color: #000; padding: 6px 10px; border-radius: 6px; }
+</style>
+</head>
+<body>
+  <div class="thirds"></div>
+  <div id="g"></div>
+<script>
+  const g = document.getElementById("g");
+  const W = innerWidth, H = innerHeight;
+  const add = (html) => g.insertAdjacentHTML("beforeend", html);
+  if (W >= H) {
+    // Landscape canvas: show center crops (match social-export.sh "crop" mode)
+    const crop = (rw, rh, cls, label) => {
+      const h = H, w = Math.round(H * rw / rh);
+      add(`<div class="box ${cls}" style="left:${(W - w) / 2}px;top:0;width:${w}px;height:${h}px"><span class="lbl">${label}</span></div>`);
+    };
+    crop(1, 1, "v11", "1:1 square");
+    crop(4, 5, "v45", "4:5 feed");
+    crop(9, 16, "v916", "9:16 vertical");
+  } else {
+    // Vertical canvas: platform UI overlap (approximate, union of TikTok/Reels/Shorts)
+    const s = W / 1080; // scale from 1080-wide reference
+    const top = 220 * s, bottom = 440 * s, right = 150 * s, left = 60 * s;
+    add(`<div class="ui" style="left:0;top:0;width:100%;height:${top}px"><span style="bottom:0">Top bar / search</span></div>`);
+    add(`<div class="ui" style="left:0;bottom:0;width:100%;height:${bottom}px"><span>Caption · handle · music · progress</span></div>`);
+    add(`<div class="ui" style="right:0;top:${top}px;width:${right}px;height:${H - top - bottom}px"><span style="writing-mode:vertical-rl;top:40%">Like · comment · share</span></div>`);
+    add(`<div class="safe" style="left:${left}px;top:${top}px;right:${right}px;bottom:${bottom}px"><span>SAFE — text & faces here</span></div>`);
+  }
+</script>
+</body>
+</html>

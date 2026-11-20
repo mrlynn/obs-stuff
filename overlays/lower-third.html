@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lower Third</title>
+<!-- Browser Source: 1920×1080. Plays when shown; auto-hides after lowerThirdHoldSeconds. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .lt {
+    position: absolute;
+    left: 96px;
+    bottom: 110px;
+    display: flex;
+    align-items: stretch;
+    filter: drop-shadow(0 18px 40px rgba(0,0,0,.35));
+  }
+  /* Centered variant: stays inside a 9:16 center crop (config lowerThirdAlign: "center") */
+  .lt.center { left: 50%; bottom: 140px; translate: -50% 0; }
+  .lt.center .panel { text-align: center; }
+  .bar {
+    width: 4px;
+    border-radius: 0;
+    background: linear-gradient(180deg, var(--accent), var(--accent2));
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+  .panel {
+    margin-left: 0;
+    overflow: hidden;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    clip-path: inset(0 100% 0 0);
+    background: color-mix(in srgb, var(--ink) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 12%, transparent);
+    border-left: 0;
+    backdrop-filter: blur(10px);
+    padding: 22px 40px 24px 30px;
+  }
+  .name { font-size: 56px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
+  .role { margin-top: 12px; font-size: 20px; color: var(--accent); }
+  .handle { margin-top: 8px; font-size: 18px; color: var(--muted); }
+  .name, .role, .handle { transform: translateY(24px); opacity: 0; }
+
+  .show .bar   { transition: transform .45s var(--ease-out); transform: scaleY(1); }
+  .show .panel { transition: clip-path .7s .12s var(--ease-out); clip-path: inset(0 0 0 0); }
+  .show .name  { transition: all .6s .30s var(--ease-out); transform: none; opacity: 1; }
+  .show .role  { transition: all .6s .40s var(--ease-out); transform: none; opacity: 1; }
+  .show .handle{ transition: all .6s .50s var(--ease-out); transform: none; opacity: 1; }
+
+  .hide .panel { transition: clip-path .45s var(--ease-in); clip-path: inset(0 100% 0 0); }
+  .hide .bar   { transition: transform .35s .3s var(--ease-in); transform: scaleY(0); }
+</style>
+</head>
+<body>
+  <div class="lt" id="lt">
+    <div class="bar"></div>
+    <div class="panel">
+      <div class="name" data-cfg="name"></div>
+      <div class="role label" data-cfg="role"></div>
+      <div class="handle label" data-cfg="handle"></div>
+    </div>
+  </div>
+<script>
+  const lt = document.getElementById("lt");
+  let t;
+  onObsShow((visible) => {
+    clearTimeout(t);
+    const pos = CFG.lowerThirdAlign === "center" ? " center" : "";
+    lt.className = "lt" + pos + (visible ? " show" : "");
+    if (visible) t = holdThenHide(CFG.lowerThirdHoldSeconds, () => (lt.className = "lt" + pos + " hide"));
+  });
+</script>
+</body>
+</html>

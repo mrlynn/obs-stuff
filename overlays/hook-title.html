@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Hook Title</title>
+<!-- Big punchy headline for the first 2–3 seconds of a short.
+     Works on 1920×1080 or 1080×1920 Browser Sources (scales to fit). -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { display: grid; place-items: center; }
+  .wrap { text-align: center; padding: 0 8vw; }
+  .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: .9em;
+    font-size: clamp(18px, 1.9vmax, 32px);
+    color: var(--accent);
+    padding: .45em .9em;
+    background: color-mix(in srgb, var(--ink) 80%, transparent);
+    border-radius: var(--radius);
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  .kicker::before { content: ""; width: 2.2em; height: 1px; background: currentColor; }
+  .hook {
+    margin-top: .35em;
+    font-size: clamp(64px, 7.4vmax, 150px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+    -webkit-text-stroke: 0;
+    color: var(--paper);
+    text-shadow: 0 4px 0 var(--ink), 0 16px 48px rgba(0,0,0,.55);
+  }
+  .hook .w {
+    display: inline-block;
+    transform: translateY(40%) scale(.9);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  .show .kicker { transition: all .5s var(--ease-out); transform: none; opacity: 1; }
+  .show .hook .w { transition: all .55s var(--ease-out); transform: none; opacity: 1; filter: none; }
+  /* gradient word: text-shadow would paint over the clipped gradient, so use drop-shadow */
+  .hook .w.gradient-text { text-shadow: none; }
+  .show .hook .w.gradient-text { filter: drop-shadow(0 4px 0 var(--ink)) drop-shadow(0 18px 30px rgba(0,0,0,.45)); }
+  .hide { transition: opacity .3s; opacity: 0; }
+</style>
+</head>
+<body>
+  <div class="wrap" id="wrap">
+    <div class="kicker label" data-cfg="hookKicker"></div>
+    <div class="hook" id="hook"></div>
+  </div>
+<script>
+  const wrap = document.getElementById("wrap");
+  const hook = document.getElementById("hook");
+  // Split into words for a staggered pop; last word gets the gradient.
+  const words = String(CFG.hook || "").split(/\s+/).filter(Boolean);
+  hook.innerHTML = words.map((w, i) =>
+    `<span class="w${i === words.length - 1 ? " gradient-text" : ""}" style="transition-delay:${0.18 + i * 0.07}s">${w.replace(/</g, "&lt;")}</span>`
+  ).join(" ");
+  let t;
+  onObsShow((visible) => {
+    clearTimeout(t);
+    wrap.className = "wrap " + (visible ? "show" : "");
+    if (visible) t = holdThenHide(CFG.hookHoldSeconds, () => (wrap.className = "wrap show hide"));
+  });
+</script>
+</body>
+</html>

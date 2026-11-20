@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlay Gallery</title>
+<!-- Open this in a browser to preview every overlay. Click a tile to replay its animation. -->
+<style>
+  body { margin: 0; padding: 32px; background: #111; color: #eee; font: 15px/1.4 -apple-system, sans-serif; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  p  { margin: 0 0 24px; color: #999; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 24px; }
+  figure { margin: 0; }
+  figcaption { margin-top: 8px; display: flex; justify-content: space-between; color: #bbb; }
+  figcaption code { color: #888; }
+  .stage {
+    position: relative; overflow: hidden; border-radius: 10px;
+    background: linear-gradient(135deg, #3a4150, #1d2230 60%, #2b2f3a);
+  }
+  .stage.wide { aspect-ratio: 16/9; } .stage.tall { aspect-ratio: 9/16; max-height: 560px; margin: 0 auto; }
+  .stage.sq   { aspect-ratio: 1; max-width: 300px; margin: 0 auto; }
+  .stage iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .stage::after { content: ""; position: absolute; inset: 0; cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1>OBS Overlay Gallery</h1>
+  <p>Edit <code>config.js</code> to rebrand everything, then reload. Click any tile to replay.</p>
+  <div class="grid" id="grid"></div>
+<script>
+  const items = [
+    ["lower-third.html", 1920, 1080, "wide", "Name / title lower third"],
+    ["lower-third.html#lowerThirdAlign=center", 1920, 1080, "wide", "Lower third — centered (crop-safe)"],
+    ["hook-title.html",  1920, 1080, "wide", "Hook headline (16:9)"],
+    ["hook-title.html",  1080, 1920, "tall", "Hook headline (9:16)"],
+    ["cta-outro.html",   1920, 1080, "wide", "Follow CTA outro"],
+    ["cta-outro.html",   1080, 1920, "tall", "Follow CTA outro (9:16)"],
+    ["background.html",  1920, 1080, "wide", "Animated background"],
+    ["cam-frame.html#showName=1", 480, 480, "sq", "Webcam frame (480×480)"],
+    ["safe-zones.html",  1920, 1080, "wide", "Crop guides — 16:9 canvas"],
+    ["safe-zones.html",  1080, 1920, "tall", "Platform UI zones — 9:16 canvas"],
+  ];
+  const grid = document.getElementById("grid");
+  for (const [src, w, h, shape, label] of items) {
+    const fig = document.createElement("figure");
+    fig.innerHTML = `<div class="stage ${shape}"><iframe src="${src}" width="${w}" height="${h}"></iframe></div>
+      <figcaption><span>${label}</span><code>${src.split("#")[0]} · ${w}×${h}</code></figcaption>`;
+    grid.appendChild(fig);
+    const stage = fig.querySelector(".stage"), frame = fig.querySelector("iframe");
+    const fit = () => (frame.style.transform = `scale(${stage.clientWidth / w})`);
+    new ResizeObserver(fit).observe(stage);
+    stage.addEventListener("click", () => frame.contentWindow.document.dispatchEvent(new MouseEvent("click")));
+  }
+</script>
+</body>
+</html>

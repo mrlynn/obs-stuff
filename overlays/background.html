@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Background</title>
+<!-- Slow animated brand background. Put it at the BOTTOM of a scene, behind screen/cam. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { background: var(--ink); }
+  .blob {
+    position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%;
+    filter: blur(140px); opacity: .22;
+  }
+  .b1 { background: var(--accent);  left: -20vmax; top: -25vmax; animation: d1 26s ease-in-out infinite alternate; }
+  .b2 { background: var(--accent2); opacity: .12; right: -25vmax; bottom: -30vmax; animation: d2 32s ease-in-out infinite alternate; }
+  .grain {
+    position: absolute; inset: 0; opacity: .04;
+    background-image: radial-gradient(rgba(255,255,255,.9) 1px, transparent 1px);
+    background-size: 4px 4px;
+  }
+  .grid {
+    position: absolute; inset: 0; opacity: .05;
+    background-image: linear-gradient(var(--paper) 1px, transparent 1px), linear-gradient(90deg, var(--paper) 1px, transparent 1px);
+    background-size: 80px 80px;
+    -webkit-mask: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  }
+  @keyframes d1 { to { transform: translate(25vmax, 18vmax) scale(1.15); } }
+  @keyframes d2 { to { transform: translate(-22vmax, -14vmax) scale(.9); } }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="grid"></div>
+  <div class="grain"></div>
+</body>
+</html>

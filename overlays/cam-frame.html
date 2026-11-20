@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cam Frame</title>
+<!-- A glowing rounded border to sit on top of your webcam.
+     Set the Browser Source to the SAME size as the webcam item (e.g. 480×480 or 640×360),
+     place it directly over the cam, and give the webcam an "Image Mask/Blend" filter using
+     masks/rounded-mask-*.png (or just a matching corner radius crop) so corners line up. -->
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .frame {
+    position: absolute; inset: 0;
+    border-radius: var(--cam-radius);
+    padding: var(--cam-border);
+    background: var(--accent);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  .name {
+    position: absolute; left: 50%; bottom: calc(var(--cam-border) + 14px);
+    transform: translateX(-50%);
+    padding: 6px 16px;
+    border-radius: var(--radius);
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: .18em;
+    font-size: 15px; white-space: nowrap; color: var(--accent);
+    background: color-mix(in srgb, var(--ink) 90%, transparent);
+  }
+  @property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  @keyframes spin { to { --a: 360deg; } }
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+  <!-- Remove `hidden` below (or add #showName=1) to put a name tag on the cam -->
+  <div class="name" id="tag" data-cfg="handle" hidden></div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (CFG.showName) document.getElementById("tag").hidden = false;
+  });
+</script>
+</body>
+</html>
