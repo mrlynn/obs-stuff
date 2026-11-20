@@ -170,7 +170,7 @@ Text sits in the top band and corners, because the app cuts you out of the middl
    python3 obs/build_meetings.py --install
    ```
    This installs the **Meetings** scene collection and adds a **Meeting Control** dock. If you don't see the dock, open it from the **Docks** menu.
-3. In OBS, choose **Scene Collection → Meetings** and click **Start Virtual Camera**.
+3. In OBS, choose **Scene Collection → Meetings**. The Virtual Camera starts by itself whenever OBS opens on Meetings.
 4. In Meet or Zoom, choose **OBS Virtual Camera** as your camera. Turn the app's own background effects off, or they'll be applied on top.
 
 **Scenes**
@@ -195,7 +195,7 @@ Text sits in the top band and corners, because the app cuts you out of the middl
 
 - **Bigger, centred text.** Meet and Zoom shrink your video to about 720p or a small tile, and Meet crops grid tiles toward 4:3. Meeting overlays use larger text and stay inside the centre 4:3 area. Check this with the guide (⌃⌥G).
 - **No audio.** The Virtual Camera sends video only. Meet and Zoom use your mic directly, so OBS's mic filters don't apply in calls.
-- **Starting the Virtual Camera automatically:** in **Tools → Scripts → startup-scene.lua**, tick **Start Virtual Camera on launch** while the Meetings collection is open.
+- **Virtual Camera autostart:** the Meetings collection starts the Virtual Camera on launch. To turn that off, untick **Start Virtual Camera on launch** in **Tools → Scripts → startup-scene.lua** while Meetings is open.
 - **Switching back** to recording: **Scene Collection → Social Media Kit**.
 
 ## 7. Work and client brands

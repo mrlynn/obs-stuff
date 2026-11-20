@@ -98,7 +98,8 @@ def build():
         # The Virtual Camera has no audio, so this collection has no mic: Meet/Zoom use your mic directly.
         "modules": {"scripts-tool": [{
             "path": str(Path(__file__).resolve().parent / "startup-scene.lua"),
-            "settings": {"scene": "M1 · Cam", "start_virtualcam": False},
+            # Starts the Virtual Camera on launch (needs the camera extension approved in System Settings)
+            "settings": {"scene": "M1 · Cam", "start_virtualcam": True},
         }]},
     }
 
