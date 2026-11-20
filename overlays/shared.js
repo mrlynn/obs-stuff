@@ -9,8 +9,14 @@
   // Brand profile (brands/private/brands.js, optional): #brand=<id> wins, else the
   // brand chosen in the Meeting Control dock, else none (personal config.js).
   const brands = window.OBSKIT_BRANDS || {};
-  let storedBrand = "";
-  try { storedBrand = localStorage.getItem("obsKit.brand") || ""; } catch (e) {}
+  // A dock choice (stored, even "Personal" = "") wins; until one is made, use
+  // OBSKIT_DEFAULT_BRAND from brands/private/brands.js, if set.
+  const readStoredBrand = () => {
+    let v = null;
+    try { v = localStorage.getItem("obsKit.brand"); } catch (e) {}
+    return v === null ? (window.OBSKIT_DEFAULT_BRAND || "") : v;
+  };
+  const storedBrand = readStoredBrand();
   const pinnedBrand = params.get("brand");
   const brandId = pinnedBrand !== null ? pinnedBrand : storedBrand;
   const brand = brands[brandId] || null;
@@ -23,8 +29,7 @@
   // When the dock switches brand, reload so every color/font/logo is re-applied.
   if (pinnedBrand === null) {
     setInterval(() => {
-      let now = "";
-      try { now = localStorage.getItem("obsKit.brand") || ""; } catch (e) {}
+      const now = readStoredBrand();
       if ((brands[now] ? now : "") !== cfg.brandId) location.reload();
     }, 1000);
   }
@@ -133,6 +138,7 @@
     setInterval(() => {
       try {
         localStorage.setItem("obsKit.seen." + document.title, String(Date.now()));
+        localStorage.setItem("obsKit.brandSeen", document.title + "=" + (cfg.brandId || "personal"));
         const d = Number(localStorage.getItem("obsKit.dock") || 0);
         if (!dockLogged && Date.now() - d < 5000) { dockLogged = true; console.log("[obsKit] " + document.title + " linked to Meeting Control dock"); }
       } catch (e) {}
