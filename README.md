@@ -2,6 +2,10 @@
 
 Record once in OBS at 16:9, then export vertical, square, feed and landscape cuts from the same file.
 
+![Overlay gallery: lower thirds, hook headlines, follow cards, animated background, webcam ring and crop guides](docs/overlay-gallery.png)
+
+*The overlays as shown in `overlays/index.html`. Edit `overlays/config.js` to change the name, colors and fonts.*
+
 ```
 overlays/            Browser Source overlays (transparent HTML, 1920×1080 unless noted)
   config.js          ← edit this to brand everything (name, handle, colors, font, timings)
