@@ -100,7 +100,7 @@ def build():
             "path": str(Path(__file__).resolve().parent / "startup-scene.lua"),
             # Starts the Virtual Camera on launch (needs the camera extension approved in System Settings)
             "settings": {"scene": "M1 · Cam", "start_virtualcam": True,
-                         "calendar_autopilot": True, "calendar_switch": True, "lead_minutes": 3},
+                         "calendar_autopilot": False, "calendar_switch": True, "lead_minutes": 3},
         }]},
     }
 

@@ -168,6 +168,8 @@
     $("items").value = inviteLines(ev); $("items").dispatchEvent(new Event("input"));
   };
   function renderCal() {
+    // No calendar data (autopilot not set up): keep the dock uncluttered
+    $("calSec").hidden = cal.status === "missing";
     const v = meetingView(readMeeting(), cal), now = Date.now();
     const st = cal.status === "ok" && !cal.stale ? '<span style="color:#7ddc8a">● Connected</span>'
       : cal.status === "ok" ? '<span style="color:#ffc46b">● Last update ' + Math.round((now - cal.generated) / 60e3) + ' min ago</span> — is OBS open?'
