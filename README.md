@@ -21,6 +21,8 @@ overlays/            Browser Source overlays (transparent HTML, 1920×1080 unles
   masks/             PNG masks for rounded or circular webcams
 meeting-backgrounds/ ready-to-upload Meet / Zoom backgrounds (dark & light) + render.sh
 brands/              optional employer/client brand profiles (brands/private/ is gitignored)
+tools/calendar/      "ObsKit Calendar" helper: reads today's meetings for the calendar autopilot
+state/               live meeting data written by the helper (gitignored)
 obs/
   build_collection.py   builds the "Social Media Kit" scene collection
   build_meetings.py     builds the "Meetings" scene collection and adds the Meeting Control dock
@@ -197,6 +199,30 @@ Text sits in the top band and corners, because the app cuts you out of the middl
 - **No audio.** The Virtual Camera sends video only. Meet and Zoom use your mic directly, so OBS's mic filters don't apply in calls.
 - **Virtual Camera autostart:** the Meetings collection starts the Virtual Camera on launch. To turn that off, untick **Start Virtual Camera on launch** in **Tools → Scripts → startup-scene.lua** while Meetings is open.
 - **Switching back** to recording: **Scene Collection → Social Media Kit**.
+
+### Calendar autopilot
+
+With the Meetings collection open, OBS follows your calendar:
+
+- **Starting soon:** 3 minutes before a meeting it switches from **M1 · Cam** to **M3 · Starting Soon**, showing the meeting's title and a countdown to its start. At the start time it switches back to **M1 · Cam**. It never takes over if you're on another scene.
+- **Agenda:** if the invite lists agenda items as bullets, they load into the dock. Add times, such as `- Intros (5m)`, and the agenda bar steps through them on its own as the meeting runs.
+- **You stay in charge:** anything you set in the dock, such as a title, an agenda item or a manual countdown, wins for that meeting. Untick **Autopilot** in the dock to turn calendar data off.
+
+**Setup (once)**
+
+1. Make sure your meetings appear in the macOS **Calendar** app. For a Google Workspace calendar, add the account under **System Settings → Internet Accounts**, if your company allows it.
+2. Build the helper and give it calendar access:
+   ```bash
+   tools/calendar/build.sh --run
+   ```
+   macOS asks once: *"ObsKit Calendar would like full access to your calendar"*. Choose **Allow**. If you missed it, go to **System Settings → Privacy & Security → Calendars → ObsKit Calendar**.
+3. Quit OBS, then run `python3 obs/build_meetings.py --install`, or turn on **Calendar autopilot** in **Tools → Scripts → startup-scene.lua** while Meetings is open.
+
+**Privacy.** The helper writes only meeting titles, times, attendee counts, the call platform and agenda bullets to `state/`, which is gitignored. Links, passcodes, dial-ins, notes and attendee emails are never read out. Agenda lines that look like links, IDs, PINs or phone numbers are dropped. It only counts timed events that have other attendees or a Zoom, Meet, Teams or Webex link, so solo focus blocks and declined invites are ignored.
+
+**Rebuilding the helper** gives it a new code signature, so macOS asks for calendar access again.
+
+Settings such as the lead time and scene names are in **Tools → Scripts → startup-scene.lua**.
 
 ## 7. Work and client brands
 

@@ -52,11 +52,12 @@
   };
   // An #agenda=… in the URL pins the text (used by the gallery); otherwise follow the dock.
   const pinned = new URLSearchParams(location.hash.slice(1)).has("agenda");
-  watchMeeting((s) => {
-    if (!pinned && typeof s.agenda === "string") agenda = s.agenda;
-    console.log("[obsKit] agenda: " + (agenda || "(empty)"));
-    render();
-  });
+  let state = {}, cal = calendarNow();
+  // Dock choice, or with autopilot, the timed agenda from the meeting invite
+  const update = () => { if (!pinned) { agenda = meetingView(state, cal).agenda || ""; } render(); };
+  watchMeeting((s) => { state = s; update(); });
+  watchCalendar((c) => { cal = c; update(); });
+  setInterval(update, 5000);
   onObsShow((v) => { visible = v; render(); });
 </script>
 </body>

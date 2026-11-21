@@ -11,3 +11,7 @@ exports/
 # macOS / editor / local tool settings
 .DS_Store
 .claude/settings.local.json
+
+# Calendar autopilot: built helper app and live meeting state (titles/times of your meetings)
+tools/calendar/build/
+state/

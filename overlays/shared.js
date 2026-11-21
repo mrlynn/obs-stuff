@@ -151,4 +151,78 @@
     const m = Math.floor(t / 60), s = t % 60;
     return m + ":" + String(s).padStart(2, "0");
   };
+
+  // ── Calendar autopilot ────────────────────────────────────
+  // tools/calendar ("ObsKit Calendar.app") writes ../state/calendar.js every minute while
+  // OBS runs. Pages can't fetch() local files, so we re-load it as a <script> tag.
+  const CAL_SRC = "../state/calendar.js";
+  const SOON_WINDOW = 90 * 60e3;           // a "next" meeting counts when it starts within 90 min
+
+  window.calendarNow = function (cal) {
+    cal = cal || window.OBSKIT_CALENDAR || null;
+    const now = Date.now();
+    if (!cal) return { status: "missing", events: [], current: null, next: null, upcoming: null, stale: true };
+    const events = (cal.events || []).filter((e) => e.end > now);
+    const current = events.filter((e) => e.start <= now).sort((a, b) => b.start - a.start)[0] || null;
+    const next = events.filter((e) => e.start > now).sort((a, b) => a.start - b.start)[0] || null;
+    const soon = next && next.start - now <= SOON_WINDOW ? next : null;
+    return {
+      status: cal.status || "missing", generated: cal.generated || 0, events, current, next,
+      upcoming: current || soon,                         // the meeting the overlays should talk about
+      stale: !cal.generated || now - cal.generated > 5 * 60e3,
+    };
+  };
+
+  window.watchCalendar = function (fn, everyMs) {
+    let last = "";
+    const load = () => {
+      const s = document.createElement("script");
+      s.src = CAL_SRC + "?t=" + Date.now();
+      s.onload = s.onerror = () => {
+        s.remove();
+        const j = JSON.stringify(window.OBSKIT_CALENDAR || null);
+        if (j !== last) { last = j; fn(calendarNow()); }
+      };
+      document.head.appendChild(s);
+    };
+    document.addEventListener("DOMContentLoaded", load);
+    setInterval(load, everyMs || 15000);
+  };
+
+  // Combine dock state with the calendar. Dock values win for the meeting they were set
+  // for (titleFor / agendaFor = that meeting's id); otherwise the calendar fills in.
+  window.meetingView = function (state, cal) {
+    state = state || {}; cal = cal || calendarNow();
+    const now = Date.now();
+    const auto = state.autopilot !== false && cal.status === "ok";
+    const ev = auto ? cal.upcoming : null;
+    const evId = ev ? ev.id : "";
+    const view = { event: ev, autopilot: auto };
+
+    // Title
+    if (state.title && (state.titleFor || "") === evId) view.title = state.title;
+    else if (ev) view.title = ev.title;
+    else view.title = state.title || CFG.meetingTitle || "";
+
+    // Countdown target: a manual timer wins while it's running; else the next meeting's start
+    if (state.countdownTo && state.countdownTo > now) view.countdownTo = state.countdownTo;
+    else if (auto && cal.next && cal.next.start - now <= SOON_WINDOW) view.countdownTo = cal.next.start;
+    else view.countdownTo = null;
+
+    // Agenda bar text
+    const items = ev && ev.agenda ? ev.agenda : [];
+    if ((state.agendaFor || "") === evId && typeof state.agenda === "string") {
+      view.agenda = state.agenda;                         // set in the dock for this meeting
+    } else if (ev && cal.current === ev && items.length && items.every((i) => i.minutes > 0)) {
+      // Timed agenda ("Intros (5m)"): step through it as the meeting runs
+      let t = (now - ev.start) / 60e3, idx = items.length - 1;
+      for (let i = 0; i < items.length; i++) { if (t < items[i].minutes) { idx = i; break; } t -= items[i].minutes; }
+      view.agenda = (idx + 1) + " · " + items[idx].text;
+    } else if (!ev) {
+      view.agenda = typeof state.agenda === "string" ? state.agenda : (CFG.agenda || "");
+    } else {
+      view.agenda = "";                                   // untimed agenda: pick items in the dock
+    }
+    return view;
+  };
 })();

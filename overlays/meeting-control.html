@@ -50,6 +50,16 @@
     <div class="row" id="brandRow"></div>
   </section>
 
+  <section id="calSec">
+    <h2 class="label">Calendar autopilot</h2>
+    <label style="display:flex;gap:8px;align-items:center;cursor:pointer">
+      <input type="checkbox" id="autopilot" style="width:auto"> Use my calendar for title, countdown &amp; agenda
+    </label>
+    <div class="now" id="calStatus">Checking calendar…</div>
+    <div class="now" id="calNext"></div>
+    <div class="row"><button id="useInvite" hidden>Use invite agenda</button></div>
+  </section>
+
   <section>
     <h2 class="label">Meeting title</h2>
     <input id="title" placeholder="Weekly sync">
@@ -114,14 +124,19 @@
   try { $("items").value = localStorage.getItem("obsKit.items") || ""; } catch (e) {}
 
   // Text fields apply as you type (title, BRB note) or on Show (agenda)
-  $("title").addEventListener("input", (e) => writeMeeting({ title: e.target.value }));
+  // Calendar: which meeting are dock changes for? (autopilot leaves values set for it alone)
+  let cal = calendarNow();
+  const evId = () => (meetingView(readMeeting(), cal).event || {}).id || "";
+  const setAgenda = (text) => writeMeeting({ agenda: text, agendaFor: evId() });
+  $("title").addEventListener("input", (e) => writeMeeting({ title: e.target.value, titleFor: evId() }));
   $("brbNote").addEventListener("input", (e) => writeMeeting({ brbNote: e.target.value }));
-  $("agendaSet").onclick = () => writeMeeting({ agenda: $("agenda").value });
+  $("agendaSet").onclick = () => setAgenda($("agenda").value);
   $("agenda").addEventListener("keydown", (e) => { if (e.key === "Enter") $("agendaSet").click(); });
-  $("agendaClear").onclick = () => { $("agenda").value = ""; writeMeeting({ agenda: "" }); };
+  $("agendaClear").onclick = () => { $("agenda").value = ""; setAgenda(""); };
 
   // Agenda items
-  const items = () => $("items").value.split("\n").map((s) => s.trim()).filter(Boolean);
+  // "Intros (5m)" → "Intros": the minutes are for autopilot timing, not for the bar
+  const items = () => $("items").value.split("\n").map((s) => s.replace(/\s*\(\d+\s*m(?:in)?\)\s*$/i, "").trim()).filter(Boolean);
   function renderPresets() {
     const cur = readMeeting().agenda || "";
     $("presets").innerHTML = "";
@@ -129,7 +144,7 @@
       const b = document.createElement("button");
       b.textContent = (i + 1) + " · " + it;
       b.classList.toggle("on", cur === b.textContent);
-      b.onclick = () => { $("agenda").value = b.textContent; writeMeeting({ agenda: b.textContent }); renderPresets(); };
+      b.onclick = () => { $("agenda").value = b.textContent; setAgenda(b.textContent); renderPresets(); };
       $("presets").appendChild(b);
     });
   }
@@ -139,9 +154,46 @@
     const labels = list.map((it, i) => (i + 1) + " · " + it);
     const i = labels.indexOf(readMeeting().agenda || "");
     const next = labels[(i + 1) % labels.length];
-    $("agenda").value = next; writeMeeting({ agenda: next }); renderPresets();
+    $("agenda").value = next; setAgenda(next); renderPresets();
   };
   renderPresets();
+
+  const fmtTime = (ms) => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const inviteLines = (ev) => (ev && ev.agenda || []).map((i) => i.text + (i.minutes ? " (" + i.minutes + "m)" : "")).join("\n");
+  let lastAuto = { id: null, items: "" };
+  $("autopilot").checked = readMeeting().autopilot !== false;
+  $("autopilot").onchange = (e) => writeMeeting({ autopilot: e.target.checked });
+  $("useInvite").onclick = () => {
+    const ev = meetingView(readMeeting(), cal).event;
+    $("items").value = inviteLines(ev); $("items").dispatchEvent(new Event("input"));
+  };
+  function renderCal() {
+    const v = meetingView(readMeeting(), cal), now = Date.now();
+    const st = cal.status === "ok" && !cal.stale ? '<span style="color:#7ddc8a">● Connected</span>'
+      : cal.status === "ok" ? '<span style="color:#ffc46b">● Last update ' + Math.round((now - cal.generated) / 60e3) + ' min ago</span> — is OBS open?'
+      : cal.status === "denied" ? '<span style="color:#ff8a7a">● No calendar access</span> — System Settings → Privacy &amp; Security → Calendars → ObsKit Calendar'
+      : '<span style="color:#ff8a7a">● Not set up</span> — run tools/calendar/build.sh --run';
+    $("calStatus").innerHTML = st + (cal.status === "ok" ? " · " + cal.events.length + " meeting" + (cal.events.length === 1 ? "" : "s") + " in the next 24 h" : "");
+    const ev = cal.current || cal.next;
+    $("calNext").textContent = !ev ? "No more meetings today."
+      : (ev === cal.current ? "Now: " : "Next: ") + ev.title + " · " + fmtTime(ev.start) + "–" + fmtTime(ev.end)
+        + (ev.platform ? " · " + ev.platform[0].toUpperCase() + ev.platform.slice(1) : "")
+        + (ev.agenda && ev.agenda.length ? " · " + ev.agenda.length + " agenda items" : "");
+    $("useInvite").hidden = !(v.event && v.event.agenda && v.event.agenda.length);
+    // New meeting coming up: load its agenda into the item list (unless you've typed your own)
+    if (v.autopilot && v.event && v.event.id !== lastAuto.id) {
+      const cur = $("items").value.trim();
+      if (!cur || cur === lastAuto.items) {
+        const lines = inviteLines(v.event);
+        if (lines) { $("items").value = lines; $("items").dispatchEvent(new Event("input")); }
+        lastAuto = { id: v.event.id, items: lines };
+      } else lastAuto.id = v.event.id;
+      if (readMeeting().titleFor !== v.event.id) { $("title").value = ""; }
+    }
+    $("title").placeholder = v.title || "Weekly sync";
+  }
+  watchCalendar((c) => { cal = c; renderCal(); });
+  setInterval(renderCal, 5000);
 
   // Timers
   document.querySelectorAll("[data-start]").forEach((b) =>

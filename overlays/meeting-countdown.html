@@ -38,11 +38,22 @@
   <div class="signoff" id="signoff" hidden></div>
 <script>
   const card = document.getElementById("card"), clock = document.getElementById("clock"), title = document.getElementById("title");
-  let target = null, fallbackStart = Date.now();
-  watchMeeting((s) => {
-    title.textContent = s.title || CFG.meetingTitle || "";
-    target = s.countdownTo && s.countdownTo > Date.now() - 3600e3 ? s.countdownTo : null;
-  });
+  let target = null, fallbackStart = Date.now(), state = {}, cal = calendarNow();
+  // Title and start time come from the dock or, with autopilot, your next calendar meeting
+  // The title always belongs to the meeting being counted down to.
+  const update = () => {
+    const v = meetingView(state, cal), now = Date.now();
+    const titleFor = (ev) => (state.title && state.titleFor === ev.id) ? state.title : ev.title;
+    const soon = v.autopilot && cal.next && cal.next.start - now <= 90 * 60e3 ? cal.next : null;
+    if (state.countdownTo && state.countdownTo > now) { title.textContent = v.title; target = state.countdownTo; }  // manual timer
+    else if (soon) { title.textContent = titleFor(soon); target = soon.start; }                                   // next meeting
+    else if (v.autopilot && cal.current) { title.textContent = titleFor(cal.current); target = cal.current.start; } // started → "Now"
+    else if (state.countdownTo && state.countdownTo > now - 3600e3) { title.textContent = v.title; target = state.countdownTo; }
+    else { title.textContent = v.title; target = null; }                                                           // countdownMinutes
+  };
+  watchMeeting((s) => { state = s; update(); });
+  watchCalendar((c) => { cal = c; update(); });
+  setInterval(update, 5000);
   function tick() {
     const end = target || fallbackStart + (Number(CFG.countdownMinutes) || 3) * 60e3;
     const left = end - Date.now();

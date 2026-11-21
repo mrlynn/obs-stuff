@@ -4,7 +4,7 @@
     {
       "name": "overlays",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "overlays"],
+      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "."],
       "port": 8765
     }
   ]
