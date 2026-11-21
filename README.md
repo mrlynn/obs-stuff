@@ -192,6 +192,7 @@ Text sits in the top band and corners, because the app cuts you out of the middl
 - **Agenda:** type a topic and press **Show**, or list items one per line and click one. **Next item →** steps through the list, and **Clear** hides the bar.
 - **Starting soon:** 1, 3, 5 or 10 minutes, or **Start at** a set time.
 - **Be right back:** 2, 5, 10 or 15 minutes.
+- **Refresh overlays** reloads every overlay in OBS (and the dock) without restarting OBS, for example after you edit `config.js`. The phone remote has the same button.
 - The dock reaches the overlays through the local server (see [Phone remote](#phone-remote)), which OBS starts for both collections. The bottom line says whether it's connected. With nothing set, the countdown and BRB timers start from `countdownMinutes` / `brbMinutes` in `config.js` when you switch to that scene.
 
 **Good to know**
@@ -212,6 +213,7 @@ These work while Zoom, Meet or Teams is the front app, so you never have to swit
 | ⌃⌥S | Starting soon: starts a 3-minute countdown and switches to **M3** |
 | ⌃⌥→ / ⌃⌥← | Next / previous agenda item |
 | ⌃⌥⌫ | Hide the agenda bar |
+| ⌃⌥⇧R | Refresh overlays: reloads every overlay in OBS, e.g. after editing `config.js` |
 
 They're set up when you install the Meetings collection. To change them, go to **Settings → Hotkeys** and search for "Meeting". For OBS to see keys pressed in other apps, give it **Input Monitoring** in **System Settings → Privacy & Security** (macOS asks the first time). They need the local server, so keep **Phone remote** on. Zoom has its own global shortcuts, so if one clashes, rebind it in either app.
 

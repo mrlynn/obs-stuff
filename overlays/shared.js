@@ -120,11 +120,18 @@
   window.OBSKIT_REMOTE = window.OBSKIT_REMOTE || null;
   // Inside OBS (window.obsstudio) pages can't call localhost, so read the server's mirror file.
   const REMOTE_JS = window.obsstudio ? "../state/meeting-remote.js" : REMOTE + "/state.js";
+  // "Refresh overlays" (dock, phone, ⌃⌥⇧R) bumps `reload`: every page that sees it change reloads.
+  // The baseline comes from the first poll, not the <script> tag, so a cached copy can't loop.
+  let reloadSeen;
+  try { localStorage.setItem("obsKit.loaded." + document.title, String(Date.now())); } catch (e) {}  // for debugging refreshes
   (function pollRemote() {
     const s = document.createElement("script");
     s.src = REMOTE_JS + "?t=" + Date.now();
     s.onload = () => {
       s.remove();
+      const rl = (window.OBSKIT_REMOTE && window.OBSKIT_REMOTE.reload) || 0;
+      if (reloadSeen === undefined) reloadSeen = rl;
+      else if (rl !== reloadSeen) { location.reload(); return; }
       try { if (window.OBSKIT_REMOTE) localStorage.setItem("obsKit.remoteSeen", document.title + "@" + (window.OBSKIT_REMOTE.updated || 0)); } catch (e) {}
     };
     s.onerror = () => s.remove();

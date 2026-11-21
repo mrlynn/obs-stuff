@@ -149,6 +149,7 @@ local HOTKEYS = {
   { name = "obskit.next",  desc = "Meeting: Next agenda item",       action = "next" },
   { name = "obskit.prev",  desc = "Meeting: Previous agenda item",   action = "prev" },
   { name = "obskit.clear", desc = "Meeting: Clear agenda bar",       action = "clear" },
+  { name = "obskit.reload", desc = "Meeting: Refresh overlays",      action = "reload" },
 }
 local hotkey_ids = {}
 

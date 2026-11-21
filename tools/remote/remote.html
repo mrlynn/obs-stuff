@@ -92,6 +92,10 @@
     <div class="row"><input id="title" placeholder="Weekly sync" enterkeyhint="done"></div>
   </section>
 
+  <section>
+    <div class="row"><button class="wide" id="refresh">Refresh overlays</button></div>
+  </section>
+
   <div class="toast" id="toast"></div>
 <script>
   const $ = (id) => document.getElementById(id);
@@ -109,6 +113,8 @@
   const setState = async (patch) => { buzz(); try { state = (await post("state", patch)).state; render(); } catch (e) { fail(); } };
   const setScene = async (name) => { if (!name) return; buzz(); try { await post("scene", { scene: name }); obs.scene = name; render(); toast("→ " + name.replace(/^M\d · /, "")); } catch (e) { fail(); } };
   const findScene = (re) => (obs.scenes || []).find((s) => re.test(s)) || "";
+
+  $("refresh").onclick = async () => { await setState({ reload: now() }); toast("Overlays refreshing"); };
 
   function fail() { $("dot").classList.remove("ok"); $("err").classList.add("show"); }
 

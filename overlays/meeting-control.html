@@ -108,11 +108,15 @@
   </section>
 
   <section>
+    <div class="row"><button id="refresh" title="Reload every overlay in OBS (⌃⌥⇧R)">Refresh overlays</button></div>
     <div class="status" id="status">Looking for overlays…</div>
   </section>
 
 <script>
   const $ = (id) => document.getElementById(id);
+
+  // Reloads every overlay (and this dock) through the server — e.g. after editing config.js
+  $("refresh").onclick = () => writeMeeting({ reload: Date.now() });
 
   // Brand picker (only when brands/private/brands.js exists). Every overlay reloads in the new brand.
   const brandList = Object.entries(window.OBSKIT_BRANDS || {}).filter(([, b]) => !b.hiddenInPicker);

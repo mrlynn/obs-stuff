@@ -37,6 +37,7 @@ MEETING_HOTKEYS = {
     "obskit.next": _key("OBS_KEY_RIGHT"),     # ⌃⌥→  next agenda item
     "obskit.prev": _key("OBS_KEY_LEFT"),      # ⌃⌥←  previous agenda item
     "obskit.clear": _key("OBS_KEY_BACKSPACE"),  # ⌃⌥⌫  clear agenda bar
+    "obskit.reload": [{"control": True, "alt": True, "shift": True, "key": "OBS_KEY_R"}],  # ⌃⌥⇧R  refresh overlays
 }
 
 

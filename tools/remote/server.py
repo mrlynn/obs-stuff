@@ -36,7 +36,7 @@ PAGE = Path(__file__).resolve().parent / "remote.html"
 LOCK = threading.Lock()
 
 # Fields the phone/dock may set. Anything else in a patch is ignored.
-ALLOWED = {"title", "titleFor", "agenda", "agendaFor", "items", "countdownTo", "brbUntil", "brbNote", "autopilot", "brand"}
+ALLOWED = {"title", "titleFor", "agenda", "agendaFor", "items", "countdownTo", "brbUntil", "brbNote", "autopilot", "brand", "reload"}
 
 
 def atomic_write(path, text):
@@ -148,6 +148,9 @@ def run_action(action, minutes=None):
         i = items.index(s["agenda"]) if s.get("agenda") in items else (-1 if action == "next" else 0)
         i = (i + (1 if action == "next" else -1)) % len(items)
         patch_state({"agenda": items[i], "agendaFor": s.get("agendaFor", "")}, "hotkey")
+        scene = ""
+    elif action == "reload":
+        patch_state({"reload": now}, "hotkey")
         scene = ""
     elif action == "clear":
         patch_state({"agenda": "", "agendaFor": s.get("agendaFor", "")}, "hotkey")
