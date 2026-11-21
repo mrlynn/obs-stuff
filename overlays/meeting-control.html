@@ -11,6 +11,7 @@
 <script src="../brands/private/brands.js"></script>
 <script src="shared.js"></script>
 <link rel="stylesheet" href="shared.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   html, body { overflow: auto; }
   body { background: var(--ink); padding: 14px 14px 24px; font-size: 14px; }
@@ -98,6 +99,13 @@
     <div class="now" id="brbNow"></div>
   </section>
 
+  <section id="phoneSec" hidden>
+    <h2 class="label">Phone remote</h2>
+    <div class="now">Scan with your phone (same Wi-Fi). Anyone with this link can control your overlays, so don't share it.</div>
+    <div id="qr" style="background:#fff;padding:10px;border-radius:8px;width:max-content;margin-top:8px"></div>
+    <div class="now" id="phoneUrl" style="word-break:break-all;user-select:all"></div>
+  </section>
+
   <section>
     <div class="status" id="status">Looking for overlays…</div>
   </section>
@@ -148,7 +156,10 @@
       $("presets").appendChild(b);
     });
   }
-  $("items").addEventListener("input", () => { try { localStorage.setItem("obsKit.items", $("items").value); } catch (e) {} renderPresets(); });
+  // Share the item list with the phone remote (debounced while typing)
+  let itemsTimer = null;
+  const shareItems = () => { clearTimeout(itemsTimer); itemsTimer = setTimeout(() => writeMeeting({ items: items() }), 600); };
+  $("items").addEventListener("input", () => { try { localStorage.setItem("obsKit.items", $("items").value); } catch (e) {} renderPresets(); shareItems(); });
   $("agendaNext").onclick = () => {
     const list = items(); if (!list.length) return;
     const labels = list.map((it, i) => (i + 1) + " · " + it);
@@ -195,6 +206,23 @@
     $("title").placeholder = v.title || "Weekly sync";
   }
   watchCalendar((c) => { cal = c; renderCal(); });
+
+  // Phone remote: show the secret link as a QR code while tools/remote/server.py is running
+  let shownUrl = "";
+  async function renderPhone() {
+    try {
+      const r = await fetch("http://127.0.0.1:" + (CFG.remotePort || 8777) + "/local/info", { cache: "no-store" });
+      const { url } = await r.json();
+      $("phoneSec").hidden = false;
+      if (url !== shownUrl) {
+        shownUrl = url; $("phoneUrl").textContent = url; $("qr").textContent = "";
+        if (window.QRCode) new QRCode($("qr"), { text: url, width: 168, height: 168, correctLevel: QRCode.CorrectLevel.M });
+        else $("qr").hidden = true;                       // offline: the link text still works
+        writeMeeting({ items: items() });                 // give the phone the current item list
+      }
+    } catch (e) { $("phoneSec").hidden = true; shownUrl = ""; }
+  }
+  renderPhone(); setInterval(renderPhone, 5000);
   setInterval(renderCal, 5000);
 
   // Timers

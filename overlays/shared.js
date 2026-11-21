@@ -111,15 +111,31 @@
   const KEY = "obsKit.meeting";
   const chan = ("BroadcastChannel" in window) ? new BroadcastChannel("obsKit") : null;
 
+  // Phone remote (tools/remote/server.py, optional): its copy of the state is polled from
+  // localhost, and whichever copy (this browser's or the remote's) changed last wins.
+  const REMOTE = "http://127.0.0.1:" + (CFG.remotePort || 8777) + "/local";
+  window.OBSKIT_REMOTE = window.OBSKIT_REMOTE || null;
+  (function pollRemote() {
+    const s = document.createElement("script");
+    s.src = REMOTE + "/state.js?t=" + Date.now();
+    s.onload = s.onerror = () => s.remove();
+    (document.head || document.documentElement).appendChild(s);
+    setTimeout(pollRemote, 1000);
+  })();
+
   window.readMeeting = function () {
     let s = {};
     try { s = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) {}
+    const r = window.OBSKIT_REMOTE;
+    if (r && (r.updated || 0) > (s.updated || 0)) s = Object.assign({}, s, r);
     return s;
   };
   window.writeMeeting = function (patch) {
     const next = Object.assign(readMeeting(), patch, { updated: Date.now() });
     try { localStorage.setItem(KEY, JSON.stringify(next)); } catch (e) {}
     if (chan) chan.postMessage(next);
+    // Tell the phone remote (text/plain keeps it a simple request: no CORS preflight)
+    try { fetch(REMOTE + "/state", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(patch) }).catch(() => {}); } catch (e) {}
     return next;
   };
   // Calls fn(state) now and whenever the state changes. Three paths, because OBS's

@@ -22,6 +22,7 @@ overlays/            Browser Source overlays (transparent HTML, 1920×1080 unles
 meeting-backgrounds/ ready-to-upload Meet / Zoom backgrounds (dark & light) + render.sh
 brands/              optional employer/client brand profiles (brands/private/ is gitignored)
 tools/calendar/      "ObsKit Calendar" helper: reads today's meetings for the calendar autopilot
+tools/remote/        phone remote: local server + phone page (started by OBS for the Meetings collection)
 state/               live meeting data written by the helper (gitignored)
 obs/
   build_collection.py   builds the "Social Media Kit" scene collection
@@ -199,6 +200,27 @@ Text sits in the top band and corners, because the app cuts you out of the middl
 - **No audio.** The Virtual Camera sends video only. Meet and Zoom use your mic directly, so OBS's mic filters don't apply in calls.
 - **Virtual Camera autostart:** the Meetings collection starts the Virtual Camera on launch. To turn that off, untick **Start Virtual Camera on launch** in **Tools → Scripts → startup-scene.lua** while Meetings is open.
 - **Switching back** to recording: **Scene Collection → Social Media Kit**.
+
+### Phone remote
+
+Control the meeting overlays and switch scenes from your phone during a call, without leaving Zoom, Meet or Teams.
+
+1. Open OBS on the **Meetings** collection. The startup script starts a small local server on port 8777.
+2. In the **Meeting Control** dock, scan the **Phone remote** QR code. Your phone must be on the same Wi-Fi as your Mac. Add the page to your Home Screen for one-tap access.
+3. The first time, macOS may ask whether **Python** may accept incoming connections. Choose **Allow**.
+
+From the phone you can:
+- switch scenes; the live scene is highlighted
+- start a BRB timer, which also switches to Be Right Back, then tap **I'm back**
+- step through the agenda items from the dock
+- start a Starting-soon countdown
+- change the meeting title
+
+The phone and dock stay in sync.
+
+**Security:** the page is only reachable through a secret link, stored in the gitignored `state/` folder. Without it the server answers "not found". It can only switch to scenes OBS reports, and only change meeting fields. Anyone with the link can control your overlays, so don't share it. To get a new link, delete `state/remote-token` and restart OBS.
+
+**If your phone can't connect:** some company Wi-Fi networks and VPNs stop devices on the same network from reaching each other. Try a home network, or your phone's hotspot with the Mac joined to it. To turn the remote off, untick **Phone remote** in **Tools → Scripts → startup-scene.lua** while Meetings is open.
 
 ### Calendar autopilot
 

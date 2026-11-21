@@ -76,6 +76,69 @@ local function check_calendar()
   obs.obs_data_release(data)
 end
 
+-- ── Phone remote (tools/remote/server.py) ───────────────────
+local phone_remote = false
+local remote_port = 8777
+local last_seq = -1
+local remote_ticks = 0
+
+local function json_str(v)
+  return '"' .. tostring(v):gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', ' ') .. '"'
+end
+
+local function read_cmd()
+  local data = obs.obs_data_create_from_json_file(root .. "/state/remote-cmd.json")
+  if data == nil then return 0, "" end
+  local seq, scene = obs.obs_data_get_int(data, "seq"), obs.obs_data_get_string(data, "scene")
+  obs.obs_data_release(data)
+  return seq, scene
+end
+
+local function write_obs_info()
+  local names = obs.obs_frontend_get_scene_names() or {}
+  local parts = {}
+  for _, n in ipairs(names) do parts[#parts + 1] = json_str(n) end
+  local body = '{"scene":' .. json_str(current_scene_name()) .. ',"scenes":[' .. table.concat(parts, ",")
+            .. '],"at":' .. string.format("%d", os.time() * 1000) .. '}'
+  local tmp = root .. "/state/.obs.json.tmp"
+  local f = io.open(tmp, "w")
+  if f == nil then return end
+  f:write(body); f:close()
+  os.rename(tmp, root .. "/state/obs.json")
+end
+
+local function tick_remote()
+  local seq, scene = read_cmd()
+  if seq > last_seq then
+    last_seq = seq
+    if scene ~= "" and scene ~= current_scene_name() and switch_to(scene) then log("phone remote → " .. scene) end
+  end
+  remote_ticks = remote_ticks + 1
+  if remote_ticks % 2 == 0 then write_obs_info() end   -- every second
+end
+
+local function start_remote()
+  os.execute('mkdir -p "' .. root .. '/state"')
+  last_seq = read_cmd()                                  -- ignore commands from before this launch
+  -- Starts the server unless one is already listening on the port
+  os.execute('/usr/sbin/lsof -nP -iTCP:' .. remote_port .. ' -sTCP:LISTEN >/dev/null 2>&1 || '
+    .. '(cd "' .. root .. '" && nohup /usr/bin/python3 tools/remote/server.py --port ' .. remote_port
+    .. ' >/dev/null 2>&1 &)')
+  write_obs_info()
+  obs.timer_add(tick_remote, 500)
+  log("phone remote on port " .. remote_port)
+end
+
+local function stop_remote()
+  obs.timer_remove(tick_remote)
+  local f = io.open(root .. "/state/remote-server.pid", "r")
+  if f then
+    local pid = tonumber(f:read("*l") or "")
+    f:close()
+    if pid then os.execute("kill " .. pid .. " >/dev/null 2>&1") end
+  end
+end
+
 local function tick_refresh() refresh_calendar() end
 local function tick_check() check_calendar() end
 
@@ -87,6 +150,7 @@ local function on_startup()
     obs.obs_frontend_start_virtualcam()
     log("started virtual camera")
   end
+  if phone_remote then start_remote() end
   if cal_autopilot then
     refresh_calendar()
     obs.timer_add(tick_refresh, 60 * 1000)
@@ -109,6 +173,8 @@ function script_properties()
   obs.obs_properties_add_int(p, "lead_minutes", "Show 'Starting soon' this many minutes before", 0, 30, 1)
   obs.obs_properties_add_text(p, "cam_scene", "Camera scene", obs.OBS_TEXT_DEFAULT)
   obs.obs_properties_add_text(p, "soon_scene", "Starting-soon scene", obs.OBS_TEXT_DEFAULT)
+  obs.obs_properties_add_bool(p, "phone_remote", "Phone remote (control overlays and scenes from your phone)")
+  obs.obs_properties_add_int(p, "remote_port", "Phone remote port", 1024, 65535, 1)
   return p
 end
 
@@ -120,6 +186,8 @@ function script_defaults(settings)
   obs.obs_data_set_default_int(settings, "lead_minutes", 3)
   obs.obs_data_set_default_string(settings, "cam_scene", "M1 · Cam")
   obs.obs_data_set_default_string(settings, "soon_scene", "M3 · Starting Soon")
+  obs.obs_data_set_default_bool(settings, "phone_remote", false)
+  obs.obs_data_set_default_int(settings, "remote_port", 8777)
 end
 
 function script_update(settings)
@@ -130,6 +198,8 @@ function script_update(settings)
   lead_minutes = obs.obs_data_get_int(settings, "lead_minutes")
   cam_scene = obs.obs_data_get_string(settings, "cam_scene")
   soon_scene = obs.obs_data_get_string(settings, "soon_scene")
+  phone_remote = obs.obs_data_get_bool(settings, "phone_remote")
+  remote_port = obs.obs_data_get_int(settings, "remote_port")
 end
 
 function script_load(settings)
@@ -142,4 +212,5 @@ end
 function script_unload()
   obs.timer_remove(tick_refresh)
   obs.timer_remove(tick_check)
+  if phone_remote then stop_remote() end
 end
