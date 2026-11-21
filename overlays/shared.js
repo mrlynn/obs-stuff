@@ -9,9 +9,12 @@
   // Brand profile (brands/private/brands.js, optional): #brand=<id> wins, else the
   // brand chosen in the Meeting Control dock, else none (personal config.js).
   const brands = window.OBSKIT_BRANDS || {};
-  // A dock choice (stored, even "Personal" = "") wins; until one is made, use
-  // OBSKIT_DEFAULT_BRAND from brands/private/brands.js, if set.
+  // Brand choice: the remote server's copy (state/meeting-remote.js, loaded before this file)
+  // wins — it's the only thing the dock and OBS overlays can both reach. Then this browser's
+  // own storage (previews), then OBSKIT_DEFAULT_BRAND from brands/private/brands.js.
   const readStoredBrand = () => {
+    const r = window.OBSKIT_REMOTE;
+    if (r && typeof r.brand === "string") return r.brand;
     let v = null;
     try { v = localStorage.getItem("obsKit.brand"); } catch (e) {}
     return v === null ? (window.OBSKIT_DEFAULT_BRAND || "") : v;
@@ -115,10 +118,16 @@
   // localhost, and whichever copy (this browser's or the remote's) changed last wins.
   const REMOTE = "http://127.0.0.1:" + (CFG.remotePort || 8777) + "/local";
   window.OBSKIT_REMOTE = window.OBSKIT_REMOTE || null;
+  // Inside OBS (window.obsstudio) pages can't call localhost, so read the server's mirror file.
+  const REMOTE_JS = window.obsstudio ? "../state/meeting-remote.js" : REMOTE + "/state.js";
   (function pollRemote() {
     const s = document.createElement("script");
-    s.src = REMOTE + "/state.js?t=" + Date.now();
-    s.onload = s.onerror = () => s.remove();
+    s.src = REMOTE_JS + "?t=" + Date.now();
+    s.onload = () => {
+      s.remove();
+      try { if (window.OBSKIT_REMOTE) localStorage.setItem("obsKit.remoteSeen", document.title + "@" + (window.OBSKIT_REMOTE.updated || 0)); } catch (e) {}
+    };
+    s.onerror = () => s.remove();
     (document.head || document.documentElement).appendChild(s);
     setTimeout(pollRemote, 1000);
   })();

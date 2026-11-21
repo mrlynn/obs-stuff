@@ -9,6 +9,7 @@
      (obs/build_meetings.py --install adds it for you). Changes show in the overlays within ½ s. -->
 <script src="config.js"></script>
 <script src="../brands/private/brands.js"></script>
+<script src="../state/meeting-remote.js"></script>
 <script src="shared.js"></script>
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -121,7 +122,7 @@
       const btn = document.createElement("button");
       btn.textContent = b.label || id;
       btn.classList.toggle("on", id === CFG.brandId);
-      btn.onclick = () => { try { localStorage.setItem("obsKit.brand", id); } catch (e) {} };
+      btn.onclick = () => { try { localStorage.setItem("obsKit.brand", id); } catch (e) {} writeMeeting({ brand: id }); };
       $("brandRow").appendChild(btn);
     });
   }
@@ -208,19 +209,19 @@
   watchCalendar((c) => { cal = c; renderCal(); });
 
   // Phone remote: show the secret link as a QR code while tools/remote/server.py is running
-  let shownUrl = "";
+  let shownUrl = "", serverUp = false;
   async function renderPhone() {
     try {
       const r = await fetch("http://127.0.0.1:" + (CFG.remotePort || 8777) + "/local/info", { cache: "no-store" });
       const { url } = await r.json();
-      $("phoneSec").hidden = false;
+      $("phoneSec").hidden = false; serverUp = true;
       if (url !== shownUrl) {
         shownUrl = url; $("phoneUrl").textContent = url; $("qr").textContent = "";
         if (window.QRCode) new QRCode($("qr"), { text: url, width: 168, height: 168, correctLevel: QRCode.CorrectLevel.M });
         else $("qr").hidden = true;                       // offline: the link text still works
         writeMeeting({ items: items() });                 // give the phone the current item list
       }
-    } catch (e) { $("phoneSec").hidden = true; shownUrl = ""; }
+    } catch (e) { $("phoneSec").hidden = true; shownUrl = ""; serverUp = false; }
   }
   renderPhone(); setInterval(renderPhone, 5000);
   setInterval(renderCal, 5000);
@@ -243,17 +244,11 @@
     const s = readMeeting(), now = Date.now();
     $("startNow").innerHTML = s.countdownTo > now ? "Starts in <b>" + fmtClock(s.countdownTo - now) + "</b>" : "";
     $("brbNow").innerHTML = s.brbUntil > now ? "Back in <b>" + fmtClock(s.brbUntil - now) + "</b>" : "";
-    try {
-      localStorage.setItem("obsKit.dock", String(now));
-      const seen = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k.startsWith("obsKit.seen.") && now - Number(localStorage.getItem(k)) < 6000) seen.push(k.slice(12));
-      }
-      $("status").innerHTML = seen.length
-        ? '<span class="ok">● Connected</span> to ' + seen.sort().join(", ")
-        : '<span class="bad">● No overlays seen</span> — switch to a meeting scene';
-    } catch (e) { $("status").textContent = "Storage unavailable: " + e.message; }
+    // In OBS the dock and overlays can't share browser storage, so changes reach the overlays
+    // through the remote server (tools/remote/server.py, started by OBS for Meetings).
+    $("status").innerHTML = serverUp
+      ? '<span class="ok">● Connected</span> — overlays and phone update through the local server'
+      : '<span class="bad">● Server not running</span> — overlays in OBS won\'t follow this dock. Turn on "Phone remote" in Tools → Scripts → startup-scene.lua';
   }, 1000);
 </script>
 </body>

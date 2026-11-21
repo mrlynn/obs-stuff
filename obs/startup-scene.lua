@@ -131,11 +131,52 @@ end
 
 local function stop_remote()
   obs.timer_remove(tick_remote)
-  local f = io.open(root .. "/state/remote-server.pid", "r")
+  local f = io.open(root .. "/state/remote-server-" .. remote_port .. ".pid", "r")
   if f then
     local pid = tonumber(f:read("*l") or "")
     f:close()
     if pid then os.execute("kill " .. pid .. " >/dev/null 2>&1") end
+  end
+end
+
+-- ── Meeting hotkeys (work while Zoom / Meet / Teams has focus) ──
+-- Bindings live in OBS Settings → Hotkeys ("Meeting: …"); the Meetings collection ships defaults.
+-- They run through the phone remote's server so the phone, dock and overlays stay in sync.
+local HOTKEYS = {
+  { name = "obskit.brb",   desc = "Meeting: Be right back (5 min)",  action = "brb",   minutes = 5 },
+  { name = "obskit.back",  desc = "Meeting: I'm back (camera)",      action = "back" },
+  { name = "obskit.soon",  desc = "Meeting: Starting soon (3 min)",  action = "soon",  minutes = 3 },
+  { name = "obskit.next",  desc = "Meeting: Next agenda item",       action = "next" },
+  { name = "obskit.prev",  desc = "Meeting: Previous agenda item",   action = "prev" },
+  { name = "obskit.clear", desc = "Meeting: Clear agenda bar",       action = "clear" },
+}
+local hotkey_ids = {}
+
+local function post_action(action, minutes)
+  if not phone_remote then log("meeting hotkeys need 'Phone remote' turned on"); return end
+  local body = '{"action":"' .. action .. '"' .. (minutes and (',"minutes":' .. minutes) or '') .. '}'
+  os.execute("/usr/bin/curl -s -m 3 -X POST -H 'Content-Type: text/plain' -d '" .. body
+    .. "' http://127.0.0.1:" .. remote_port .. "/local/action >/dev/null 2>&1 &")
+  log("hotkey → " .. action)
+end
+
+local function register_hotkeys(settings)
+  for _, h in ipairs(HOTKEYS) do
+    local id = obs.obs_hotkey_register_frontend(h.name, h.desc, function(pressed)
+      if pressed then post_action(h.action, h.minutes) end
+    end)
+    hotkey_ids[h.name] = id
+    local arr = obs.obs_data_get_array(settings, h.name)
+    obs.obs_hotkey_load(id, arr)
+    obs.obs_data_array_release(arr)
+  end
+end
+
+function script_save(settings)
+  for name, id in pairs(hotkey_ids) do
+    local arr = obs.obs_hotkey_save(id)
+    obs.obs_data_set_array(settings, name, arr)
+    obs.obs_data_array_release(arr)
   end
 end
 
@@ -205,6 +246,7 @@ end
 function script_load(settings)
   root = script_path():gsub("/obs/?$", ""):gsub("/$", "")
   script_update(settings)
+  register_hotkeys(settings)
   -- Wait a moment so the frontend has finished loading the collection.
   obs.timer_add(on_startup, 1000)
 end

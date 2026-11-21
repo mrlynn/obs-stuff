@@ -24,6 +24,22 @@ OBS_DIR = Path.home() / "Library/Application Support/obs-studio"
 DOCK_TITLE = "Meeting Control"
 
 
+# Default bindings for the startup script's meeting hotkeys (rebind in OBS Settings → Hotkeys).
+# They work while Zoom / Meet / Teams has focus (OBS needs Input Monitoring permission).
+def _key(k):
+    return [{"control": True, "alt": True, "key": k}]
+
+
+MEETING_HOTKEYS = {
+    "obskit.brb": _key("OBS_KEY_B"),          # ⌃⌥B  be right back (5 min)
+    "obskit.back": _key("OBS_KEY_C"),         # ⌃⌥C  I'm back → camera
+    "obskit.soon": _key("OBS_KEY_S"),         # ⌃⌥S  starting soon (3 min)
+    "obskit.next": _key("OBS_KEY_RIGHT"),     # ⌃⌥→  next agenda item
+    "obskit.prev": _key("OBS_KEY_LEFT"),      # ⌃⌥←  previous agenda item
+    "obskit.clear": _key("OBS_KEY_BACKSPACE"),  # ⌃⌥⌫  clear agenda bar
+}
+
+
 def build():
     bc.sources = []                      # fresh source list for this collection
     mask = bc.make_bubble_mask()         # same rounded bubble as the recording kit
@@ -101,7 +117,7 @@ def build():
             # Starts the Virtual Camera on launch (needs the camera extension approved in System Settings)
             "settings": {"scene": "M1 · Cam", "start_virtualcam": True,
                          "calendar_autopilot": False, "calendar_switch": True, "lead_minutes": 3,
-                         "phone_remote": True, "remote_port": 8777},
+                         "phone_remote": True, "remote_port": 8777, **MEETING_HOTKEYS},
         }]},
     }
 

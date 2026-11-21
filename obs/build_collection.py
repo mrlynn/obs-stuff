@@ -241,7 +241,9 @@ def build():
         "scaling_enabled": False,
         # Lua script that switches to "2 · Talking Head" on startup (see obs/startup-scene.lua)
         "modules": {"scripts-tool": [{"path": str(Path(__file__).resolve().parent / "startup-scene.lua"),
-                                      "settings": {"scene": "2 · Talking Head", "start_virtualcam": False}}]},
+                                      "settings": {"scene": "2 · Talking Head", "start_virtualcam": False,
+                                                   # the Meeting Control dock reaches overlays through this server
+                                                   "phone_remote": True, "remote_port": 8777}}]},
     }
 
 

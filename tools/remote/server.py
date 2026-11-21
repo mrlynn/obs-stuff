@@ -14,6 +14,7 @@ Routes
   /local/state.js          overlays poll this (localhost only, no token)
   /local/state             dock/overlays POST their changes here (localhost only)
   /local/info              phone link for the dock's QR code (localhost only)
+  /local/action            POST {"action": "brb"|"back"|"soon"|"next"|"prev"|"clear", "minutes": 5} (OBS hotkeys)
 
 Everything lives in state/ (gitignored): remote-token, meeting-remote.json, remote-cmd.json,
 and obs.json (current scene + scene list, written by the OBS script).
@@ -35,7 +36,7 @@ PAGE = Path(__file__).resolve().parent / "remote.html"
 LOCK = threading.Lock()
 
 # Fields the phone/dock may set. Anything else in a patch is ignored.
-ALLOWED = {"title", "titleFor", "agenda", "agendaFor", "items", "countdownTo", "brbUntil", "brbNote", "autopilot"}
+ALLOWED = {"title", "titleFor", "agenda", "agendaFor", "items", "countdownTo", "brbUntil", "brbNote", "autopilot", "brand"}
 
 
 def atomic_write(path, text):
@@ -83,6 +84,12 @@ def get_state():
     return read_json(STATE / "meeting-remote.json", {})
 
 
+def write_mirror(s):
+    # OBS browser sources can't reach localhost (Chromium Private Network Access), but they can
+    # load local files next to them — so overlays inside OBS read this file instead.
+    atomic_write(STATE / "meeting-remote.js", "window.OBSKIT_REMOTE = " + json.dumps(s, ensure_ascii=False) + ";\n")
+
+
 def patch_state(patch, origin):
     clean = {k: v for k, v in (patch or {}).items() if k in ALLOWED}
     if not clean:
@@ -93,6 +100,7 @@ def patch_state(patch, origin):
         s["updated"] = int(time.time() * 1000)
         s["by"] = origin
         atomic_write(STATE / "meeting-remote.json", json.dumps(s, ensure_ascii=False))
+        write_mirror(s)
     return s
 
 
@@ -109,6 +117,46 @@ def send_scene(name):
         cmd = {"seq": int(cmd.get("seq", 0)) + 1, "scene": name, "at": int(time.time() * 1000)}
         atomic_write(STATE / "remote-cmd.json", json.dumps(cmd, ensure_ascii=False))
     return True
+
+
+def find_scene(pattern, fallback_first=False):
+    import re
+    scenes = [s for s in obs_info().get("scenes", []) if not s.startswith("[")]
+    for s in scenes:
+        if re.search(pattern, s, re.I):
+            return s
+    return scenes[0] if (fallback_first and scenes) else ""
+
+
+def run_action(action, minutes=None):
+    """Meeting actions for OBS hotkeys (and anything else on this Mac)."""
+    now = int(time.time() * 1000)
+    s = get_state()
+    items = [f"{i + 1} · {t}" for i, t in enumerate(s.get("items") or [])]
+    if action == "brb":
+        patch_state({"brbUntil": now + int(minutes or 5) * 60_000}, "hotkey")
+        scene = find_scene(r"be right back|\bbrb\b")
+    elif action == "back":
+        patch_state({"brbUntil": 0}, "hotkey")
+        scene = find_scene(r"\bcam\b", fallback_first=True)
+    elif action == "soon":
+        patch_state({"countdownTo": now + int(minutes or 3) * 60_000}, "hotkey")
+        scene = find_scene(r"starting soon")
+    elif action in ("next", "prev"):
+        if not items:
+            return {"ok": False, "error": "no agenda items"}
+        i = items.index(s["agenda"]) if s.get("agenda") in items else (-1 if action == "next" else 0)
+        i = (i + (1 if action == "next" else -1)) % len(items)
+        patch_state({"agenda": items[i], "agendaFor": s.get("agendaFor", "")}, "hotkey")
+        scene = ""
+    elif action == "clear":
+        patch_state({"agenda": "", "agendaFor": s.get("agendaFor", "")}, "hotkey")
+        scene = ""
+    else:
+        return {"ok": False, "error": "unknown action"}
+    if scene:
+        send_scene(scene)
+    return {"ok": True, "scene": scene}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -157,6 +205,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
         self.end_headers()
 
     def do_GET(self):
@@ -187,6 +236,9 @@ class Handler(BaseHTTPRequestHandler):
         if kind == "phone" and sub == "/scene":
             ok = send_scene(str(data.get("scene", "")))
             return self.reply(200 if ok else 400, {"ok": ok})
+        if kind == "local" and sub == "/action":          # OBS hotkeys (localhost only)
+            res = run_action(str(data.get("action", "")), data.get("minutes"))
+            return self.reply(200 if res.get("ok") else 400, res)
         return self.reply(404, {"error": "not found"})
 
 
@@ -196,8 +248,9 @@ def main():
     a = ap.parse_args()
     STATE.mkdir(exist_ok=True)
     token()
+    write_mirror(get_state())
     srv = ThreadingHTTPServer(("0.0.0.0", a.port), Handler)
-    atomic_write(STATE / "remote-server.pid", str(os.getpid()))
+    atomic_write(STATE / f"remote-server-{a.port}.pid", str(os.getpid()))   # one per port
     print(f"ObsKit remote on port {a.port}", flush=True)
     try:
         srv.serve_forever()

@@ -192,7 +192,7 @@ Text sits in the top band and corners, because the app cuts you out of the middl
 - **Agenda:** type a topic and press **Show**, or list items one per line and click one. **Next item →** steps through the list, and **Clear** hides the bar.
 - **Starting soon:** 1, 3, 5 or 10 minutes, or **Start at** a set time.
 - **Be right back:** 2, 5, 10 or 15 minutes.
-- The bottom line shows which overlays the dock can reach. With nothing set, the countdown and BRB timers start from `countdownMinutes` / `brbMinutes` in `config.js` when you switch to that scene.
+- The dock reaches the overlays through the local server (see [Phone remote](#phone-remote)), which OBS starts for both collections. The bottom line says whether it's connected. With nothing set, the countdown and BRB timers start from `countdownMinutes` / `brbMinutes` in `config.js` when you switch to that scene.
 
 **Good to know**
 
@@ -200,6 +200,20 @@ Text sits in the top band and corners, because the app cuts you out of the middl
 - **No audio.** The Virtual Camera sends video only. Meet and Zoom use your mic directly, so OBS's mic filters don't apply in calls.
 - **Virtual Camera autostart:** the Meetings collection starts the Virtual Camera on launch. To turn that off, untick **Start Virtual Camera on launch** in **Tools → Scripts → startup-scene.lua** while Meetings is open.
 - **Switching back** to recording: **Scene Collection → Social Media Kit**.
+
+### Hotkeys during a call
+
+These work while Zoom, Meet or Teams is the front app, so you never have to switch to OBS:
+
+| Hotkey | Does |
+|---|---|
+| ⌃⌥B | Be right back: starts a 5-minute BRB timer and switches to **M4** |
+| ⌃⌥C | I'm back: clears the timer and returns to **M1 · Cam** |
+| ⌃⌥S | Starting soon: starts a 3-minute countdown and switches to **M3** |
+| ⌃⌥→ / ⌃⌥← | Next / previous agenda item |
+| ⌃⌥⌫ | Hide the agenda bar |
+
+They're set up when you install the Meetings collection. To change them, go to **Settings → Hotkeys** and search for "Meeting". For OBS to see keys pressed in other apps, give it **Input Monitoring** in **System Settings → Privacy & Security** (macOS asks the first time). They need the local server, so keep **Phone remote** on. Zoom has its own global shortcuts, so if one clashes, rebind it in either app.
 
 ### Phone remote
 
@@ -220,7 +234,7 @@ The phone and dock stay in sync.
 
 **Security:** the page is only reachable through a secret link, stored in the gitignored `state/` folder. Without it the server answers "not found". It can only switch to scenes OBS reports, and only change meeting fields. Anyone with the link can control your overlays, so don't share it. To get a new link, delete `state/remote-token` and restart OBS.
 
-**If your phone can't connect:** some company Wi-Fi networks and VPNs stop devices on the same network from reaching each other. Try a home network, or your phone's hotspot with the Mac joined to it. To turn the remote off, untick **Phone remote** in **Tools → Scripts → startup-scene.lua** while Meetings is open.
+**If your phone can't connect:** some company Wi-Fi networks and VPNs stop devices on the same network from reaching each other. Try a home network, or your phone's hotspot with the Mac joined to it. To turn the remote off, untick **Phone remote** in **Tools → Scripts → startup-scene.lua** while Meetings is open. This also stops the dock and the hotkeys from changing overlays. Inside OBS, overlays can't talk to the dock directly; they read the server's state from `state/meeting-remote.js`.
 
 ### Calendar autopilot
 
